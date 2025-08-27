@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { AuthProvider } from "@/components/auth/auth-provider";
-import { SyncProvider } from "@/lib/providers/sync-provider";
+
 import { Toaster } from "@/components/ui/toaster";
 
 type Props = {
@@ -21,14 +21,8 @@ export default function Providers({ children }: Props) {
     >
       <QueryProvider>
         <AuthProvider>
-          <SyncProvider
-            autoSyncOnLogin={true}
-            periodicSyncInterval={5}
-            showSyncNotifications={false}
-          >
-            {children}
-            <Toaster />
-          </SyncProvider>
+          {children}
+          <Toaster />
         </AuthProvider>
       </QueryProvider>
     </ThemeProvider>

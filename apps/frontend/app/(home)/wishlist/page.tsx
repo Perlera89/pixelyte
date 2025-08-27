@@ -14,24 +14,9 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 export default function WishlistPage() {
-  const { items, removeItem, clearWishlist, fetchWishlist, isLoading } =
-    useWishlistStore();
+  const { items, removeItem, clearWishlist, isLoading } = useWishlistStore();
   const addToCart = useCartStore((state) => state.addItem);
   const { isAuthenticated, isHydrated } = useAuthStore();
-
-  // Cargar la wishlist cuando el componente se monta
-  useEffect(() => {
-    if (isAuthenticated && isHydrated) {
-      console.log("Fetching wishlist...");
-      fetchWishlist();
-    }
-  }, [isAuthenticated, isHydrated, fetchWishlist]);
-
-  // Debug: log items cuando cambien
-  useEffect(() => {
-    console.log("Wishlist items:", items);
-    console.log("Items length:", items.length);
-  }, [items]);
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
@@ -114,7 +99,7 @@ export default function WishlistPage() {
             return (
               <Card
                 key={product.id}
-                className="group hover:shadow-lg transition-all duration-300"
+                className="group hover:shadow-lg transition-all duration-300 pt-0"
               >
                 <CardContent className="p-0">
                   <div className="relative">

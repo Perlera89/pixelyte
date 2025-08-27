@@ -84,15 +84,7 @@ export const useAuthStore = create<AuthState>()(
               isAuthenticated: true,
             });
 
-            // Sync cart and wishlist after successful login
-            try {
-              const { syncService } = await import("../services/sync.service");
-
-              // Schedule automatic sync after login
-              syncService.scheduleSyncOnLogin();
-            } catch (syncError) {
-              console.warn("Failed to sync data after login:", syncError);
-            }
+            // Note: Sync functionality has been removed - cart and wishlist now work offline only
           } catch (error) {
             throw error;
           } finally {
