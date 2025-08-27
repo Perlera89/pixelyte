@@ -1,45 +1,63 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
-import { products } from "@/lib/data/products"
-import { ProductModal } from "@/components/product-modal"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
+import { products } from "@/lib/data/products";
+import { ProductModal } from "@/components/product/product-modal";
 
 export default function ProductsPage() {
-  const [searchTerm, setSearchTerm] = useState("")
-  const [categoryFilter, setCategoryFilter] = useState("all")
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState(null)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter
-    return matchesSearch && matchesCategory
-  })
+    const matchesSearch = product.name
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesCategory =
+      categoryFilter === "all" || product.category === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
-  const categories = Array.from(new Set(products.map((p) => p.category)))
+  const categories = Array.from(new Set(products.map((p) => p.category)));
 
   const handleAddProduct = () => {
-    setEditingProduct(null)
-    setIsModalOpen(true)
-  }
+    setEditingProduct(null);
+    setIsModalOpen(true);
+  };
 
   const handleEditProduct = (product) => {
-    setEditingProduct(product)
-    setIsModalOpen(true)
-  }
+    setEditingProduct(product);
+    setIsModalOpen(true);
+  };
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">Gestión de Productos</h1>
-          <p className="text-muted-foreground">Administra el catálogo de productos</p>
+          <p className="text-muted-foreground">
+            Administra el catálogo de productos
+          </p>
         </div>
         <Button onClick={handleAddProduct}>
           <Plus className="h-4 w-4 mr-2" />
@@ -95,19 +113,31 @@ export default function ProductsPage() {
                     />
                     <div>
                       <div className="font-medium">{product.name}</div>
-                      <div className="text-sm text-muted-foreground">{product.brand}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {product.brand}
+                      </div>
                     </div>
                   </div>
                 </TableCell>
                 <TableCell>{product.category}</TableCell>
-                <TableCell className="font-medium">${product.price.toLocaleString()}</TableCell>
-                <TableCell>{product.featured && <Badge variant="secondary">Destacado</Badge>}</TableCell>
+                <TableCell className="font-medium">
+                  ${product.price.toLocaleString()}
+                </TableCell>
+                <TableCell>
+                  {product.featured && (
+                    <Badge variant="secondary">Destacado</Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Button variant="ghost" size="sm">
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm" onClick={() => handleEditProduct(product)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditProduct(product)}
+                    >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button variant="ghost" size="sm">
@@ -127,7 +157,11 @@ export default function ProductsPage() {
         </div>
       )}
 
-      <ProductModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} product={editingProduct} />
+      <ProductModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        product={editingProduct}
+      />
     </div>
-  )
+  );
 }

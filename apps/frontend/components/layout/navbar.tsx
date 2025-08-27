@@ -32,12 +32,12 @@ import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const categories = [
-  { name: "Smartphones", href: "/categoria/smartphones" },
-  { name: "Laptops", href: "/categoria/laptops" },
-  { name: "Tablets", href: "/categoria/tablets" },
-  { name: "Audio", href: "/categoria/audio" },
-  { name: "Gaming", href: "/categoria/gaming" },
-  { name: "Accesorios", href: "/categoria/accesorios" },
+  { name: "Smartphones", href: "/category/smartphones" },
+  { name: "Laptops", href: "/category/laptops" },
+  { name: "Tablets", href: "/category/tablets" },
+  { name: "Audio", href: "/category/audio" },
+  { name: "Gaming", href: "/category/gaming" },
+  { name: "Accesorios", href: "/category/accesorios" },
 ];
 
 export function Navbar() {

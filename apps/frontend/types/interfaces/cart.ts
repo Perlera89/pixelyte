@@ -1,8 +1,11 @@
 import { Product } from "@/types";
 
 export interface CartItem {
+  id?: string; // API cart item ID
   product: Product;
   quantity: number;
+  price?: number; // Individual item price
+  total?: number; // Item total (price * quantity)
 }
 
 export interface CartState {

@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { usePathname } from "next/navigation"
-import Link from "next/link"
+import { usePathname } from "next/navigation";
+import Link from "next/link";
 import {
   Sidebar,
   SidebarContent,
@@ -10,8 +10,16 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
-} from "@/components/ui/sidebar"
-import { LayoutDashboard, Package, Tags, Users, BarChart3, Bookmark, ArrowLeft } from "lucide-react"
+} from "@/components/ui/sidebar";
+import {
+  LayoutDashboard,
+  Package,
+  Tags,
+  Users,
+  BarChart3,
+  Bookmark,
+  ArrowLeft,
+} from "lucide-react";
 
 const adminMenuItems = [
   {
@@ -44,10 +52,10 @@ const adminMenuItems = [
     url: "/admin/reportes",
     icon: BarChart3,
   },
-]
+];
 
 export function AdminSidebar() {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <Sidebar>
@@ -58,7 +66,9 @@ export function AdminSidebar() {
           </div>
           <div>
             <h2 className="text-lg font-semibold">Pixelyte Admin</h2>
-            <p className="text-sm text-muted-foreground">Panel de administración</p>
+            <p className="text-sm text-muted-foreground">
+              Panel de administración
+            </p>
           </div>
         </div>
       </SidebarHeader>
@@ -67,7 +77,11 @@ export function AdminSidebar() {
         <SidebarMenu>
           {adminMenuItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild isActive={pathname === item.url} className="w-full justify-start">
+              <SidebarMenuButton
+                asChild
+                isActive={pathname === item.url}
+                className="w-full justify-start"
+              >
                 <Link href={item.url} className="flex items-center gap-3">
                   <item.icon className="h-4 w-4" />
                   <span>{item.title}</span>
@@ -82,7 +96,10 @@ export function AdminSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild className="w-full justify-start">
-              <Link href="/" className="flex items-center gap-3 text-muted-foreground hover:text-foreground">
+              <Link
+                href="/"
+                className="flex items-center gap-3 text-muted-foreground hover:text-foreground"
+              >
                 <ArrowLeft className="h-4 w-4" />
                 <span>Regresar a la tienda</span>
               </Link>
@@ -91,5 +108,5 @@ export function AdminSidebar() {
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

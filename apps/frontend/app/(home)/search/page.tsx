@@ -21,6 +21,16 @@ import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
 import { searchProducts, categories } from "@/lib/data/products";
 import type { Product } from "@/lib/stores/cart-store";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
+import Link from "next/link";
 
 type SortOption =
   | "relevance"
@@ -202,7 +212,7 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto">
               {categories.map((category) => (
                 <Button key={category.id} variant="outline" asChild>
-                  <a href={`/categoria/${category.id}`}>{category.name}</a>
+                  <Link href={`/category/${category.id}`}>{category.name}</Link>
                 </Button>
               ))}
             </div>
@@ -226,16 +236,16 @@ export default function SearchPage() {
               <h3 className="font-semibold">Sugerencias:</h3>
               <div className="flex flex-wrap justify-center gap-2">
                 <Button variant="outline" size="sm" asChild>
-                  <a href="/buscar?q=smartphone">Smartphones</a>
+                  <Link href="/search?q=smartphone">Smartphones</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <a href="/buscar?q=laptop">Laptops</a>
+                  <Link href="/search?q=laptop">Laptops</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <a href="/buscar?q=apple">Apple</a>
+                  <Link href="/search?q=apple">Apple</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <a href="/buscar?q=gaming">Gaming</a>
+                  <Link href="/search?q=gaming">Gaming</Link>
                 </Button>
               </div>
             </div>

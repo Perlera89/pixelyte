@@ -83,6 +83,16 @@ export const useAuthStore = create<AuthState>()(
               refreshToken: newLogin.refreshToken,
               isAuthenticated: true,
             });
+
+            // Sync cart and wishlist after successful login
+            try {
+              const { syncService } = await import("../services/sync.service");
+
+              // Schedule automatic sync after login
+              syncService.scheduleSyncOnLogin();
+            } catch (syncError) {
+              console.warn("Failed to sync data after login:", syncError);
+            }
           } catch (error) {
             throw error;
           } finally {

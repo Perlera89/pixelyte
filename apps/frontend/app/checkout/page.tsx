@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -89,7 +90,7 @@ export default function CheckoutPage() {
     }
 
     if (items.length === 0) {
-      router.push("/carrito");
+      router.push("/cart");
       return;
     }
 
@@ -634,10 +635,10 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4 justify-center">
                     <Button asChild>
-                      <a href="/pedidos">Ver Mis Pedidos</a>
+                      <Link href="/order">Ver Mis Pedidos</Link>
                     </Button>
                     <Button variant="outline" asChild>
-                      <a href="/">Seguir Comprando</a>
+                      <Link href="/">Seguir Comprando</Link>
                     </Button>
                   </div>
                 </CardContent>

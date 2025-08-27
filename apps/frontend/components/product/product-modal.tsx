@@ -21,8 +21,8 @@ import {
 } from "@/components/ui/select";
 import { Save, ArrowLeft, ArrowRight, Plus } from "lucide-react";
 import { brands, categories } from "@/lib/data/brands";
-import { BrandModal } from "./product/brand-modal";
-import { CategoryModal } from "./product/category-modal";
+import { BrandModal } from "./brand-modal";
+import { CategoryModal } from "./category-modal";
 
 interface ProductModalProps {
   isOpen: boolean;

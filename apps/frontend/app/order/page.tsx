@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
@@ -104,7 +105,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/login?redirect=/pedidos");
+      router.push("/login?redirect=/order");
     }
   }, [isAuthenticated, router]);
 
@@ -187,7 +188,7 @@ export default function OrdersPage() {
               información de seguimiento.
             </p>
             <Button size="lg" asChild>
-              <a href="/">Explorar Productos</a>
+              <Link href="/">Explorar Productos</Link>
             </Button>
           </div>
         </main>
@@ -341,7 +342,7 @@ export default function OrdersPage() {
         {/* Continue Shopping */}
         <div className="mt-12 text-center">
           <Button size="lg" asChild>
-            <a href="/">Seguir Comprando</a>
+            <Link href="/">Seguir Comprando</Link>
           </Button>
         </div>
       </main>

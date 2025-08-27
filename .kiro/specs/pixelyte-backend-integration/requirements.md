@@ -2,7 +2,7 @@
 
 ## Introduction
 
-La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas frontend implementadas, incluyendo HomePage, CategoryPage, ProductPage, SearchPage, WishlistPage, CartPage, CheckoutPage, OrdersPage y sistema de autenticación. Este proyecto se enfoca en implementar toda la integración backend necesaria para conectar estas vistas con una API REST completa que maneje productos, usuarios, carritos, pedidos y autenticación.
+La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas frontend implementadas, incluyendo HomePage, CategoryPage, ProductPage, SearchPage, WishlistPage, CartPage, CheckoutPage, OrdersPage, las vistas de administración y sistema de autenticación que ya está completado. Esta especificación se enfoca en implementar toda la integración backend necesaria para conectar estas vistas con una API REST completa que maneje productos, usuarios, carritos, pedidos y autenticación.
 
 ## Requirements
 
@@ -20,18 +20,6 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 
 ### Requirement 2
 
-**User Story:** Como usuario, quiero que mi autenticación sea persistente y segura, para que pueda acceder a mi cuenta de forma confiable.
-
-#### Acceptance Criteria
-
-1. WHEN un usuario se registra THEN el sistema SHALL crear una cuenta nueva con validación de email único
-2. WHEN un usuario inicia sesión THEN el sistema SHALL validar credenciales y devolver un token JWT
-3. WHEN un usuario accede a rutas protegidas THEN el sistema SHALL verificar el token JWT válido
-4. WHEN un token expira THEN el sistema SHALL rechazar la solicitud y requerir nueva autenticación
-5. WHEN un usuario cierra sesión THEN el sistema SHALL invalidar el token
-
-### Requirement 3
-
 **User Story:** Como usuario, quiero que mi carrito de compras se mantenga sincronizado entre sesiones, para que no pierda mis productos seleccionados.
 
 #### Acceptance Criteria
@@ -42,7 +30,7 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 4. WHEN un usuario inicia sesión THEN el sistema SHALL cargar su carrito persistido
 5. WHEN un usuario no autenticado usa el carrito THEN el sistema SHALL mantener el carrito en localStorage hasta el login
 
-### Requirement 4
+### Requirement 3
 
 **User Story:** Como usuario, quiero completar el proceso de compra de forma fluida, para que pueda realizar pedidos exitosamente.
 
@@ -54,9 +42,9 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 4. WHEN se crea un pedido THEN el sistema SHALL generar un ID único y actualizar el stock de productos
 5. WHEN se completa una compra THEN el sistema SHALL vaciar el carrito y enviar confirmación
 
-### Requirement 5
+### Requirement 4
 
-**User Story:** Como usuario, quiero ver mi historial de pedidos, para que pueda rastrear mis compras anteriores.
+**User Story:** Como usuario, quiero ver mi historial de pedidos en el perfil, para que pueda rastrear mis compras anteriores.
 
 #### Acceptance Criteria
 
@@ -65,7 +53,7 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 3. WHEN el estado de un pedido cambia THEN el sistema SHALL actualizar el estado en la base de datos
 4. WHEN un usuario busca un pedido THEN el sistema SHALL permitir filtrar por ID o fecha
 
-### Requirement 6
+### Requirement 5
 
 **User Story:** Como usuario, quiero gestionar mi lista de deseos de forma persistente, para que pueda guardar productos de interés.
 
@@ -76,7 +64,7 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 3. WHEN un usuario inicia sesión THEN el sistema SHALL cargar su wishlist persistida
 4. WHEN un usuario no autenticado usa wishlist THEN el sistema SHALL mantener la lista en localStorage hasta el login
 
-### Requirement 7
+### Requirement 6
 
 **User Story:** Como usuario, quiero filtrar y ordenar productos de forma eficiente, para que pueda encontrar exactamente lo que busco.
 
@@ -88,7 +76,7 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 4. WHEN un usuario ordena productos THEN el sistema SHALL aplicar el criterio de ordenamiento (precio, nombre, rating)
 5. WHEN un usuario combina múltiples filtros THEN el sistema SHALL aplicar todos los filtros simultáneamente
 
-### Requirement 8
+### Requirement 7
 
 **User Story:** Como usuario, quiero gestionar mi perfil de cuenta, para que pueda actualizar mi información personal.
 
@@ -99,7 +87,7 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 3. WHEN un usuario cambia su contraseña THEN el sistema SHALL validar la contraseña actual y actualizar con la nueva
 4. WHEN un usuario actualiza su email THEN el sistema SHALL verificar que el nuevo email sea único
 
-### Requirement 9
+### Requirement 8
 
 **User Story:** Como administrador del sistema, quiero que la API maneje errores de forma consistente, para que el frontend pueda mostrar mensajes apropiados.
 
@@ -110,6 +98,19 @@ La plataforma de ventas en línea Pixelyte ya cuenta con todas las vistas fronte
 3. WHEN hay un error de autenticación THEN el sistema SHALL devolver código 401 con mensaje apropiado
 4. WHEN hay un error de autorización THEN el sistema SHALL devolver código 403 con mensaje apropiado
 5. WHEN hay un error interno THEN el sistema SHALL devolver código 500 sin exponer detalles internos
+
+### Requirement 9
+
+**User Story:** Como administrador, quiero acceder a un panel de administración completo, para que pueda gestionar productos, pedidos y usuarios de la plataforma.
+
+#### Acceptance Criteria
+
+1. WHEN un administrador accede a /admin THEN el sistema SHALL verificar permisos de administrador
+2. WHEN un administrador ve el dashboard THEN el sistema SHALL mostrar métricas de ventas, productos y usuarios
+3. WHEN un administrador gestiona productos THEN el sistema SHALL permitir crear, editar, eliminar y actualizar stock
+4. WHEN un administrador gestiona pedidos THEN el sistema SHALL permitir ver, actualizar estado y procesar devoluciones
+5. WHEN un administrador gestiona usuarios THEN el sistema SHALL permitir ver perfiles, activar/desactivar cuentas
+6. WHEN un administrador gestiona categorías THEN el sistema SHALL permitir crear, editar y eliminar categorías de productos
 
 ### Requirement 10
 

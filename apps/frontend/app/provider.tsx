@@ -1,8 +1,9 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { ReactNode, useState } from "react";
+import { ReactNode } from "react";
+import { QueryProvider } from "@/lib/providers/query-provider";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { SyncProvider } from "@/lib/providers/sync-provider";
 import { Toaster } from "@/components/ui/toaster";
 
 type Props = {
@@ -10,21 +11,18 @@ type Props = {
 };
 
 export default function Providers({ children }: Props) {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        refetchOnWindowFocus: false,
-        retry: 1,
-      },
-    },
-  }));
-
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryProvider>
       <AuthProvider>
-        {children}
-        <Toaster />
+        <SyncProvider
+          autoSyncOnLogin={true}
+          periodicSyncInterval={5}
+          showSyncNotifications={false}
+        >
+          {children}
+          <Toaster />
+        </SyncProvider>
       </AuthProvider>
-    </QueryClientProvider>
+    </QueryProvider>
   );
 }

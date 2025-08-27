@@ -79,7 +79,7 @@ export default function WishlistPage() {
               >
                 <CardContent className="p-0">
                   <div className="relative">
-                    <Link href={`/producto/${product.id}`}>
+                    <Link href={`/product/${product.id}`}>
                       <div className="aspect-square relative overflow-hidden rounded-t-lg">
                         <Image
                           src={product.image || "/placeholder.svg"}
@@ -106,7 +106,7 @@ export default function WishlistPage() {
                   </div>
 
                   <div className="p-4">
-                    <Link href={`/producto/${product.id}`}>
+                    <Link href={`/product/${product.id}`}>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import type React from "react";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +65,7 @@ export default function AccountPage() {
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router.push("/login?redirect=/cuenta");
+      router.push("/login?redirect=/account");
       return;
     }
 
@@ -577,7 +578,7 @@ export default function AccountPage() {
                       de envíos.
                     </p>
                     <Button asChild>
-                      <a href="/pedidos">Ir a Mis Pedidos</a>
+                      <Link href="/order">Ir a Mis Pedidos</Link>
                     </Button>
                   </div>
                 </CardContent>
