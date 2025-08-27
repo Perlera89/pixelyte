@@ -7,9 +7,10 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import type { Product } from "@/types";
+import { UserRole, type Product } from "@/types";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 interface ProductCardProps {
@@ -24,14 +25,19 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
     removeItem: removeFromWishlist,
     isInWishlist,
   } = useWishlistStore();
+  const { user } = useAuthStore();
 
   const isWishlisted = isInWishlist(product.id);
-  const basePrice = parseFloat(product.basePrice) || 0;
-  const comparePrice = parseFloat(product.compareAtPrice) || 0;
-  const hasDiscount = comparePrice > basePrice;
-  const discountPercentage = hasDiscount
-    ? Math.round(((comparePrice - basePrice) / comparePrice) * 100)
-    : 0;
+  const isAdmin = user?.role === UserRole.ADMIN;
+
+  // Handle product pricing
+  const basePrice = parseFloat(product.basePrice || "0");
+  const comparePrice = parseFloat(product.compareAtPrice || "0");
+  const hasDiscount = comparePrice > basePrice && comparePrice > 0;
+  const discountPercentage =
+    hasDiscount && comparePrice > 0
+      ? Math.round(((comparePrice - basePrice) / comparePrice) * 100)
+      : 0;
 
   const handleWishlistToggle = () => {
     if (isWishlisted) {
@@ -78,17 +84,20 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
           </div>
         </Link>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/90 backdrop-blur-sm hover:bg-background",
-            isWishlisted && "opacity-100 text-red-500 hover:text-red-600"
-          )}
-          onClick={handleWishlistToggle}
-        >
-          <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
-        </Button>
+        {/* Botón de favoritos - Solo mostrar si NO es admin */}
+        {!isAdmin && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn(
+              "absolute top-3 right-3 h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-background/90 backdrop-blur-sm hover:bg-background",
+              isWishlisted && "opacity-100 text-red-500 hover:text-red-600"
+            )}
+            onClick={handleWishlistToggle}
+          >
+            <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+          </Button>
+        )}
       </div>
 
       <div className="p-3 space-y-2">
@@ -138,15 +147,18 @@ export function ProductCard({ product, featured = false }: ProductCardProps) {
           </div>
         </Link>
 
-        <Button
-          className="w-full mt-2"
-          onClick={handleAddToCart}
-          disabled={!product.isActive}
-          size="sm"
-        >
-          <ShoppingCart className="h-4 w-4 mr-2" />
-          {!product.isActive ? "No disponible" : "Agregar al carrito"}
-        </Button>
+        {/* Botón de agregar al carrito - Solo mostrar si NO es admin */}
+        {!isAdmin && (
+          <Button
+            className="w-full mt-2"
+            onClick={handleAddToCart}
+            disabled={!product.isActive}
+            size="sm"
+          >
+            <ShoppingCart className="h-4 w-4 mr-2" />
+            {!product.isActive ? "No disponible" : "Agregar al carrito"}
+          </Button>
+        )}
       </div>
     </Card>
   );

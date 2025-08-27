@@ -1,3 +1,5 @@
+import { UserRole } from "@/types";
+
 export interface User {
   id: string;
   names: string;
@@ -8,8 +10,8 @@ export interface User {
   dateOfBirth: Date;
   isAuthenticated: boolean;
   token: string;
-  
-  role?: "user" | "admin";
+
+  role?: UserRole;
 }
 
 export interface AuthState {

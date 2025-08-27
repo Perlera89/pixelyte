@@ -182,7 +182,7 @@ export function useCartSync() {
     if (isAuthenticated) {
       syncCart();
     }
-  }, [isAuthenticated, syncCart]);
+  }, [isAuthenticated]); // Remover syncCart de las dependencias
 
   return {
     syncCart,
@@ -215,7 +215,7 @@ export function useWishlistSync() {
     if (isAuthenticated) {
       syncWishlist();
     }
-  }, [isAuthenticated, syncWishlist]);
+  }, [isAuthenticated]); // Remover syncWishlist de las dependencias
 
   return {
     syncWishlist,
@@ -228,11 +228,14 @@ export function useWishlistSync() {
  * Hook para detectar cambios de conectividad y sincronizar
  */
 export function useConnectivitySync() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(true); // Asumir online por defecto
   const { isAuthenticated } = useAuthStore();
   const { sync } = useSync({ showNotifications: false });
 
   useEffect(() => {
+    // Verificar conectividad inicial
+    setIsOnline(navigator.onLine);
+
     const handleOnline = () => {
       setIsOnline(true);
       if (isAuthenticated) {
@@ -252,7 +255,7 @@ export function useConnectivitySync() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
     };
-  }, [isAuthenticated, sync]);
+  }, [isAuthenticated]); // Remover sync de las dependencias
 
   return {
     isOnline,

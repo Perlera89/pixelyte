@@ -3,7 +3,7 @@
 import { ReactNode, useEffect, createContext, useContext } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { User } from "@/types";
+import { User, UserRole } from "@/types";
 
 type AuthContextType = {
   user: Partial<User> | null;
@@ -21,11 +21,15 @@ export const AuthContext = createContext<AuthContextType>({
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const { user, isLoading, isAuthenticated, checkAuth } = useAuthStore();
+  const { user, isLoading, isAuthenticated, checkAuth, isHydrated } =
+    useAuthStore();
 
   // Verificar autenticación al cargar
   useEffect(() => {
     const checkAuthAndRedirect = async () => {
+      // Esperar a que el store esté hidratado antes de hacer verificaciones
+      if (!isHydrated) return;
+
       try {
         await checkAuth();
       } finally {
@@ -66,16 +70,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Si está autenticado pero intenta acceder a rutas de autenticación
         if (
           isAuthenticated &&
-          ["/login", "/register", "/forgot-password", "/reset-password"].includes(
-            currentPath
-          )
+          [
+            "/login",
+            "/register",
+            "/forgot-password",
+            "/reset-password",
+          ].includes(currentPath)
         ) {
           router.push("/");
           return;
         }
 
         // Si es ruta de administración y no es admin
-        if (isAdminPath && (!isAuthenticated || user?.role !== "admin")) {
+        if (
+          isAdminPath &&
+          (!isAuthenticated || user?.role !== UserRole.ADMIN)
+        ) {
           router.push("/");
           return;
         }
@@ -90,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuthAndRedirect();
-  }, [checkAuth, isAuthenticated, isLoading, router, user?.role]);
+  }, [checkAuth, isAuthenticated, isLoading, router, user?.role, isHydrated]);
 
   const value = {
     user,

@@ -30,6 +30,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserRole } from "@/types";
 
 const categories = [
   { name: "Smartphones", href: "/category/smartphones" },
@@ -49,7 +50,7 @@ export function Navbar() {
   const totalItems = useCartStore((state) => state.getTotalItems());
   const wishlistItems = useWishlistStore((state) => state.items.length);
 
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === UserRole.ADMIN;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,14 +120,14 @@ export function Navbar() {
             {/* Theme Toggle */}
             <ThemeToggle />
 
-            {/* Wishlist y Cart para todos los usuarios excepto admin, ya que el panel está en el menú de perfil */}
-            {!isAdmin && isAuthenticated && (
+            {/* Wishlist y Cart - Solo mostrar si NO es admin */}
+            {!isAdmin && (
               <>
                 {/* Wishlist */}
                 <Link href="/wishlist">
                   <Button variant="ghost" size="sm" className="relative">
                     <Heart className="h-4 w-4" />
-                    {wishlistItems > 0 && (
+                    {isAuthenticated && wishlistItems > 0 && (
                       <Badge
                         variant="destructive"
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
@@ -141,7 +142,7 @@ export function Navbar() {
                 <Link href="/cart">
                   <Button variant="ghost" size="sm" className="relative">
                     <ShoppingCart className="h-4 w-4" />
-                    {totalItems > 0 && (
+                    {isAuthenticated && totalItems > 0 && (
                       <Badge
                         variant="destructive"
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
@@ -149,21 +150,6 @@ export function Navbar() {
                         {totalItems}
                       </Badge>
                     )}
-                  </Button>
-                </Link>
-              </>
-            )}
-
-            {!isAuthenticated && (
-              <>
-                <Link href="/wishlist">
-                  <Button variant="ghost" size="sm" className="relative">
-                    <Heart className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="/cart">
-                  <Button variant="ghost" size="sm" className="relative">
-                    <ShoppingCart className="h-4 w-4" />
                   </Button>
                 </Link>
               </>

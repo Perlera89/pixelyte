@@ -10,8 +10,13 @@ export interface AddToWishlistDto {
   productId: string;
 }
 
+export interface WishlistItemDto {
+  productId: string;
+  variantId?: string;
+}
+
 export interface SyncWishlistDto {
-  productIds: string[];
+  items: WishlistItemDto[];
 }
 
 export const wishlistApi = {

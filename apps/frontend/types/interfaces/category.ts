@@ -12,4 +12,9 @@ export interface Category {
   seoDescription: string;
   createdAt: string;
   updatedAt: string;
+  parent?: Category | null;
+  children?: Category[];
+  _count?: {
+    products: number;
+  };
 }

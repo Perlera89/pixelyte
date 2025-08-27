@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useProducts, ProductFilters } from "@/hooks/use-products";
+import { useProducts } from "@/hooks/use-products";
 import { useAddToCart } from "@/hooks/use-cart";
 import { useAddToWishlist } from "@/hooks/use-wishlist";
 import { LoadingState, LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -9,9 +9,9 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
 import { Product } from "@/types";
-import { toast } from "sonner";
+import { ProductFilters } from "@/lib/api";
 
 interface ProductListProps {
   initialFilters?: ProductFilters;

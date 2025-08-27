@@ -22,15 +22,6 @@ import { Search, Loader2 } from "lucide-react";
 import { searchProducts, categories } from "@/lib/data/products";
 import type { Product } from "@/lib/stores/cart-store";
 import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
-import Link from "next/link";
 
 type SortOption =
   | "relevance"

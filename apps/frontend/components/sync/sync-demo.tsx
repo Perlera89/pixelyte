@@ -25,10 +25,9 @@ import {
   WifiOff,
   ShoppingCart,
   Heart,
-  Clock,
   CheckCircle,
   AlertCircle,
-  Queue,
+  ListEnd,
 } from "lucide-react";
 
 /**
@@ -285,7 +284,7 @@ export function SyncDemo() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Queue className="h-5 w-5 text-orange-500" />
+            <ListEnd className="h-5 w-5 text-orange-500" />
             Offline Queue
           </CardTitle>
           <CardDescription>

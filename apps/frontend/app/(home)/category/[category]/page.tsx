@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, use, useEffect, useCallback } from "react";
 import { Navbar } from "@/components/layout/navbar";
 import { ProductGrid } from "@/components/home/product-grid";
 import { Button } from "@/components/ui/button";
@@ -14,20 +14,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { getProductsByCategory, categories } from "@/lib/data/products";
+import { useCategories } from "@/hooks/use-categories";
+import { useProductsByCategory } from "@/hooks/use-products";
+import { useBrands } from "@/hooks/use-brands";
+import { categoriesList } from "@/lib/data/products";
 
 type SortOption = "featured" | "price-low" | "price-high" | "rating" | "newest";
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     category: string;
-  };
+  }>;
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
-  const { category } = await Promise.resolve(params);
+export default function CategoryPage({ params }: CategoryPageProps) {
+  const { category } = use(params);
+  const { data: categoriesResponse } = useCategories();
+  const { data: brandsResponse } = useBrands();
   const [sortOption, setSortOption] = useState<SortOption>("featured");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 3000]);
   const [filters, setFilters] = useState({
     brand: "",
     inStock: false,
@@ -35,78 +40,210 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     rating: 0,
   });
 
-  const categoryData = categories.find((cat) => cat.id === category);
-  const allProducts = getProductsByCategory(category);
+  // Buscar la categoría por slug en los datos del API
+  const categories = categoriesResponse?.data || [];
+  const categoryData = categories.find((cat) => cat.slug === category);
 
-  // Get unique brands for this category
-  const brands = Array.from(
-    new Set(allProducts.map((product) => product.brand))
-  );
+  // Obtener productos por categoría usando la API (sin filtros para evitar recargas)
+  const {
+    data: productsResponse,
+    isLoading: productsLoading,
+    error: productsError,
+  } = useProductsByCategory(category, {});
 
+  // Obtener marcas disponibles
+  const brands = brandsResponse?.data || [];
+
+  // Los productos de la API (sin filtros aplicados)
+  const allProducts = productsResponse?.data || [];
+
+  // Calcular el rango de precios disponible de los productos
+  const availablePriceRange = useMemo(() => {
+    if (allProducts.length === 0) return { min: 0, max: 3000 };
+
+    const prices = allProducts.map((product: any) =>
+      parseFloat(product.basePrice)
+    );
+    return {
+      min: Math.min(...prices),
+      max: Math.max(...prices),
+    };
+  }, [allProducts]);
+
+  // Aplicar filtros y ordenamiento localmente para evitar recargas
   const filteredAndSortedProducts = useMemo(() => {
-    const filtered = allProducts.filter((product) => {
-      if (filters.brand && product.brand !== filters.brand) return false;
-      if (filters.inStock && product.stock === 0) return false;
-      if (filters.onSale && !product.discount) return false;
-      if (filters.rating && product.rating < filters.rating) return false;
-      return product.price >= priceRange[0] && product.price <= priceRange[1];
+    console.log("=== FILTROS DEBUG ===");
+    console.log("Productos totales:", allProducts.length);
+    console.log("Filtros:", filters);
+    console.log("Precio rango:", priceRange);
+
+    if (allProducts.length === 0) {
+      console.log("No hay productos para filtrar");
+      return [];
+    }
+
+    let result = [...allProducts];
+
+    // Filtro de precio
+    result = result.filter((product: any) => {
+      const price = parseFloat(product.basePrice);
+      const inRange = price >= priceRange[0] && price <= priceRange[1];
+      if (!inRange) {
+        console.log(
+          `Producto ${product.name} filtrado por precio: ${price} no está en rango [${priceRange[0]}, ${priceRange[1]}]`
+        );
+      }
+      return inRange;
     });
 
-    // Sort products
+    // Filtro de marca
+    if (filters.brand) {
+      result = result.filter((product: any) => {
+        const matches = product.brand?.slug === filters.brand;
+        if (!matches) {
+          console.log(
+            `Producto ${product.name} filtrado por marca: ${product.brand?.slug} !== ${filters.brand}`
+          );
+        }
+        return matches;
+      });
+    }
+
+    // Filtro de productos activos
+    if (filters.inStock) {
+      result = result.filter((product: any) => {
+        const isActive = product.isActive;
+        if (!isActive) {
+          console.log(`Producto ${product.name} filtrado por stock: no activo`);
+        }
+        return isActive;
+      });
+    }
+
+    // Filtro de productos en oferta
+    if (filters.onSale) {
+      result = result.filter((product: any) => {
+        const hasDiscount =
+          product.compareAtPrice &&
+          parseFloat(product.compareAtPrice) > parseFloat(product.basePrice);
+        if (!hasDiscount) {
+          console.log(
+            `Producto ${product.name} filtrado por oferta: no tiene descuento`
+          );
+        }
+        return hasDiscount;
+      });
+    }
+
+    // Filtro de productos destacados
+    if (filters.rating > 0) {
+      result = result.filter((product: any) => {
+        const isFeatured = product.isFeatured;
+        if (!isFeatured) {
+          console.log(
+            `Producto ${product.name} filtrado por destacado: no es destacado`
+          );
+        }
+        return isFeatured;
+      });
+    }
+
+    // Aplicar ordenamiento
     switch (sortOption) {
       case "price-low":
-        filtered.sort((a, b) => {
-          const priceA = a.discount
-            ? a.price * (1 - a.discount / 100)
-            : a.price;
-          const priceB = b.discount
-            ? b.price * (1 - b.discount / 100)
-            : b.price;
-          return priceA - priceB;
-        });
+        result.sort(
+          (a: any, b: any) => parseFloat(a.basePrice) - parseFloat(b.basePrice)
+        );
         break;
       case "price-high":
-        filtered.sort((a, b) => {
-          const priceA = a.discount
-            ? a.price * (1 - a.discount / 100)
-            : a.price;
-          const priceB = b.discount
-            ? b.price * (1 - b.discount / 100)
-            : b.price;
-          return priceB - priceA;
-        });
+        result.sort(
+          (a: any, b: any) => parseFloat(b.basePrice) - parseFloat(a.basePrice)
+        );
         break;
       case "rating":
-        filtered.sort((a, b) => b.rating - a.rating);
+        result.sort(
+          (a: any, b: any) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0)
+        );
         break;
       case "newest":
-        filtered.sort((a, b) => Number.parseInt(b.id) - Number.parseInt(a.id));
+        result.sort(
+          (a: any, b: any) =>
+            new Date(b.createdAt || 0).getTime() -
+            new Date(a.createdAt || 0).getTime()
+        );
         break;
       case "featured":
       default:
-        filtered.sort((a, b) => {
-          if (a.featured && !b.featured) return -1;
-          if (!a.featured && b.featured) return 1;
-          return b.rating - a.rating;
-        });
+        result.sort(
+          (a: any, b: any) => (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0)
+        );
         break;
     }
 
-    return filtered;
-  }, [allProducts, filters, priceRange, sortOption]);
+    console.log(`Productos finales después de ordenar: ${result.length}`);
+    console.log("=== FIN FILTROS DEBUG ===");
+    return result;
+  }, [allProducts, priceRange, filters, sortOption]);
 
-  const clearFilters = () => {
+  // Actualizar el rango de precios máximo cuando cambien los datos
+  useEffect(() => {
+    if (availablePriceRange.max > 0 && priceRange[1] === 3000) {
+      setPriceRange([availablePriceRange.min, availablePriceRange.max]);
+    }
+  }, [availablePriceRange.max, availablePriceRange.min, priceRange]);
+
+  const clearFilters = useCallback(() => {
     setFilters({
       brand: "",
       inStock: false,
       onSale: false,
       rating: 0,
     });
-    setPriceRange([0, 5000]);
+    setPriceRange([availablePriceRange.min, availablePriceRange.max]);
     setSortOption("featured");
-  };
+  }, [availablePriceRange.min, availablePriceRange.max]);
 
-  if (!categoryData) {
+  // Estados de carga y error
+  if (productsLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground">
+              Cargando productos...
+            </h1>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Mostrar error si la API falla
+  if (productsError) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground">
+              Error al cargar productos
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              {(productsError as any)?.message ||
+                "Ha ocurrido un error inesperado"}
+            </p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Solo mostrar error si no encontramos la categoría en ningún lado
+  const finalCategoryData =
+    categoryData || categoriesList.find((cat) => cat.slug === category);
+
+  if (!finalCategoryData) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -127,9 +264,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground font-sans mb-2">
-            {categoryData.name}
+            {finalCategoryData.name}
           </h1>
-          <p className="text-muted-foreground">{categoryData.description}</p>
+          <p className="text-muted-foreground">
+            {finalCategoryData.description}
+          </p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
@@ -151,8 +290,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                     onValueChange={(value) =>
                       setPriceRange(value as [number, number])
                     }
-                    max={5000}
-                    min={0}
+                    max={availablePriceRange.max}
+                    min={availablePriceRange.min}
                     step={50}
                     className="mb-2"
                   />
@@ -166,9 +305,12 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                 <div>
                   <h3 className="font-semibold mb-3">Marca</h3>
                   <Select
-                    value={filters.brand}
+                    value={filters.brand || "all-brands"}
                     onValueChange={(value) =>
-                      setFilters({ ...filters, brand: value })
+                      setFilters((prev) => ({
+                        ...prev,
+                        brand: value === "all-brands" ? "" : value,
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -179,25 +321,28 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                         Todas las marcas
                       </SelectItem>
                       {brands.map((brand) => (
-                        <SelectItem key={brand} value={brand}>
-                          {brand}
+                        <SelectItem key={brand.id} value={brand.slug}>
+                          {brand.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Stock Filter */}
+                {/* Active Products Filter */}
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="inStock"
                     checked={filters.inStock}
                     onCheckedChange={(checked) =>
-                      setFilters({ ...filters, inStock: checked as boolean })
+                      setFilters((prev) => ({
+                        ...prev,
+                        inStock: checked as boolean,
+                      }))
                     }
                   />
                   <label htmlFor="inStock" className="text-sm font-medium">
-                    Solo productos en stock
+                    Solo productos activos
                   </label>
                 </div>
 
@@ -207,7 +352,10 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                     id="onSale"
                     checked={filters.onSale}
                     onCheckedChange={(checked) =>
-                      setFilters({ ...filters, onSale: checked as boolean })
+                      setFilters((prev) => ({
+                        ...prev,
+                        onSale: checked as boolean,
+                      }))
                     }
                   />
                   <label htmlFor="onSale" className="text-sm font-medium">
@@ -215,29 +363,21 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
                   </label>
                 </div>
 
-                {/* Rating Filter */}
-                <div>
-                  <h3 className="font-semibold mb-3">Calificación mínima</h3>
-                  <Select
-                    value={filters.rating.toString()}
-                    onValueChange={(value) =>
-                      setFilters({
-                        ...filters,
-                        rating: Number.parseFloat(value),
-                      })
+                {/* Featured Filter */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="featured"
+                    checked={filters.rating > 0}
+                    onCheckedChange={(checked) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        rating: checked ? 1 : 0,
+                      }))
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Cualquier calificación" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any-rating">
-                        Cualquier calificación
-                      </SelectItem>
-                      <SelectItem value="4">4+ estrellas</SelectItem>
-                      <SelectItem value="4.5">4.5+ estrellas</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  />
+                  <label htmlFor="featured" className="text-sm font-medium">
+                    Solo productos destacados
+                  </label>
                 </div>
               </CardContent>
             </Card>

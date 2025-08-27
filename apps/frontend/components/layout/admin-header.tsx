@@ -93,7 +93,7 @@ export function AdminHeader({ onToggleSidebar }: AdminHeaderProps) {
               className="flex items-center space-x-2"
             >
               <User className="h-4 w-4" />
-              <span>{user?.name}</span>
+              <span>{user?.names}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

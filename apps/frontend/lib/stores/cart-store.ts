@@ -33,8 +33,8 @@ interface CartState {
 
   // Local actions (for offline support)
   addItemLocally: (product: Product, quantity?: number) => void;
-  removeItemLocally: (productId: string) => void;
-  updateQuantityLocally: (productId: string, quantity: number) => void;
+  removeItemLocally: (itemIdOrProductId: string) => void;
+  updateQuantityLocally: (itemIdOrProductId: string, quantity: number) => void;
   clearCartLocally: () => void;
 
   // Computed values
@@ -66,8 +66,17 @@ export const useCartStore = create<CartState>()(
         set({ isAddingItem: true, error: null });
 
         try {
+          // Verificar si el usuario está autenticado
+          const authStorage = localStorage.getItem("auth-storage");
+          if (!authStorage) {
+            // Si no está autenticado, solo agregar localmente
+            get().addItemLocally(product, quantity);
+            toast.success("Producto agregado al carrito (local)");
+            return;
+          }
+
           const addToCartDto: AddToCartDto = {
-            productId: product.id,
+            variantId: product.id, // Usar variantId en lugar de productId
             quantity,
           };
 
@@ -85,11 +94,11 @@ export const useCartStore = create<CartState>()(
           offlineQueue.enqueue({
             type: "cart",
             action: "add",
-            data: { productId: product.id, quantity },
+            data: { variantId: product.id, quantity },
           });
 
           toast.error(
-            "Sin conexión. Producto guardado localmente y se sincronizará automáticamente."
+            "Error del servidor. Producto guardado localmente y se sincronizará automáticamente."
           );
         } finally {
           set({ isAddingItem: false });
@@ -99,10 +108,41 @@ export const useCartStore = create<CartState>()(
       removeItem: async (itemId: string) => {
         set({ isRemovingItem: true, error: null });
 
+        // Verificar si el usuario está autenticado
+        const authStorage = localStorage.getItem("auth-storage");
+        if (!authStorage) {
+          // Si no está autenticado, solo remover localmente
+          get().removeItemLocally(itemId);
+          toast.success("Producto eliminado del carrito (local)");
+          set({ isRemovingItem: false });
+          return;
+        }
+
+        // Buscar el item para determinar si es un ID de item del carrito o ID de producto
+        const items = get().items;
+        const item = items.find(
+          (i) => i.id === itemId || i.product.id === itemId
+        );
+
+        if (!item) {
+          toast.error("Producto no encontrado en el carrito");
+          set({ isRemovingItem: false });
+          return;
+        }
+
+        // Si el item tiene un ID del servidor, usarlo; sino, es solo local
+        const serverItemId = item.id;
+
         try {
-          await cartApi.removeItem(itemId);
-          await get().fetchCart(); // Refresh cart data
-          toast.success("Producto eliminado del carrito");
+          if (serverItemId) {
+            await cartApi.removeItem(serverItemId);
+            await get().fetchCart(); // Refresh cart data
+            toast.success("Producto eliminado del carrito");
+          } else {
+            // Es un item solo local
+            get().removeItemLocally(itemId);
+            toast.success("Producto eliminado del carrito (local)");
+          }
         } catch (error) {
           const apiError = ApiErrorHandler.handleError(error);
           set({ error: apiError.message });
@@ -111,15 +151,24 @@ export const useCartStore = create<CartState>()(
           get().removeItemLocally(itemId);
 
           // Queue operation for when connection is restored
-          offlineQueue.enqueue({
-            type: "cart",
-            action: "remove",
-            data: { itemId },
-          });
+          if (serverItemId) {
+            offlineQueue.enqueue({
+              type: "cart",
+              action: "remove",
+              data: { itemId: serverItemId },
+            });
+          }
 
-          toast.error(
-            "Sin conexión. Cambio guardado localmente y se sincronizará automáticamente."
-          );
+          // Mostrar mensaje más específico según el tipo de error
+          if (apiError.status === 401) {
+            toast.error(
+              "Inicia sesión para sincronizar cambios con el servidor"
+            );
+          } else {
+            toast.error(
+              "Error del servidor. Cambio guardado localmente y se sincronizará automáticamente."
+            );
+          }
         } finally {
           set({ isRemovingItem: false });
         }
@@ -133,10 +182,41 @@ export const useCartStore = create<CartState>()(
 
         set({ isUpdatingItem: true, error: null });
 
+        // Verificar si el usuario está autenticado
+        const authStorage = localStorage.getItem("auth-storage");
+        if (!authStorage) {
+          // Si no está autenticado, solo actualizar localmente
+          get().updateQuantityLocally(itemId, quantity);
+          toast.success("Cantidad actualizada (local)");
+          set({ isUpdatingItem: false });
+          return;
+        }
+
+        // Buscar el item para determinar si es un ID de item del carrito o ID de producto
+        const items = get().items;
+        const item = items.find(
+          (i) => i.id === itemId || i.product.id === itemId
+        );
+
+        if (!item) {
+          toast.error("Producto no encontrado en el carrito");
+          set({ isUpdatingItem: false });
+          return;
+        }
+
+        // Si el item tiene un ID del servidor, usarlo; sino, es solo local
+        const serverItemId = item.id;
+
         try {
-          await cartApi.updateItem(itemId, { quantity });
-          await get().fetchCart(); // Refresh cart data
-          toast.success("Cantidad actualizada");
+          if (serverItemId) {
+            await cartApi.updateItem(serverItemId, { quantity });
+            await get().fetchCart(); // Refresh cart data
+            toast.success("Cantidad actualizada");
+          } else {
+            // Es un item solo local
+            get().updateQuantityLocally(itemId, quantity);
+            toast.success("Cantidad actualizada (local)");
+          }
         } catch (error) {
           const apiError = ApiErrorHandler.handleError(error);
           set({ error: apiError.message });
@@ -145,15 +225,24 @@ export const useCartStore = create<CartState>()(
           get().updateQuantityLocally(itemId, quantity);
 
           // Queue operation for when connection is restored
-          offlineQueue.enqueue({
-            type: "cart",
-            action: "update",
-            data: { itemId, quantity },
-          });
+          if (serverItemId) {
+            offlineQueue.enqueue({
+              type: "cart",
+              action: "update",
+              data: { itemId: serverItemId, quantity },
+            });
+          }
 
-          toast.error(
-            "Sin conexión. Cambio guardado localmente y se sincronizará automáticamente."
-          );
+          // Mostrar mensaje más específico según el tipo de error
+          if (apiError.status === 401) {
+            toast.error(
+              "Inicia sesión para sincronizar cambios con el servidor"
+            );
+          } else {
+            toast.error(
+              "Error del servidor. Cambio guardado localmente y se sincronizará automáticamente."
+            );
+          }
         } finally {
           set({ isUpdatingItem: false });
         }
@@ -182,6 +271,14 @@ export const useCartStore = create<CartState>()(
         set({ isLoading: true, error: null });
 
         try {
+          // Verificar si el usuario está autenticado antes de obtener el carrito
+          const authStorage = localStorage.getItem("auth-storage");
+          if (!authStorage) {
+            console.log("No auth data found, skipping cart fetch");
+            set({ items: [], subtotal: 0, total: 0, itemCount: 0 });
+            return;
+          }
+
           const cartData = await cartApi.getCart();
           set({
             items: cartData.items,
@@ -214,10 +311,36 @@ export const useCartStore = create<CartState>()(
 
           const syncData: SyncCartDto = {
             items: localItems.map((item) => ({
-              productId: item.product.id,
+              variantId: item.product.id, // Usar variantId en lugar de productId
               quantity: item.quantity,
             })),
           };
+
+          console.log("Syncing cart with data:", syncData);
+          console.log("Local items:", localItems);
+
+          // Verificar si el usuario está autenticado antes de sincronizar
+          const authStorage = localStorage.getItem("auth-storage");
+          if (!authStorage) {
+            console.log("No auth data found, skipping sync");
+            toast.info("Inicia sesión para sincronizar tu carrito");
+            return;
+          }
+
+          // Verificar que el token sea válido
+          let authData;
+          try {
+            authData = JSON.parse(authStorage);
+            if (!authData.state?.token) {
+              console.log("No valid token found, skipping sync");
+              toast.info("Inicia sesión para sincronizar tu carrito");
+              return;
+            }
+          } catch (error) {
+            console.log("Invalid auth data, skipping sync");
+            toast.info("Inicia sesión para sincronizar tu carrito");
+            return;
+          }
 
           const cartData = await cartApi.syncCart(syncData);
 
@@ -266,11 +389,10 @@ export const useCartStore = create<CartState>()(
           // En caso de error, mantener datos locales
           console.error(
             "Cart sync failed, keeping local data:",
-            apiError.message
+            apiError.message,
+            error
           );
-          toast.error(
-            "Error al sincronizar carrito, manteniendo datos locales"
-          );
+          toast.error("Error al sincronizar carrito: " + apiError.message);
         } finally {
           set({ isSyncing: false });
         }
@@ -305,9 +427,11 @@ export const useCartStore = create<CartState>()(
         set({ itemCount: newItemCount, total: newTotal, subtotal: newTotal });
       },
 
-      removeItemLocally: (productId: string) => {
+      removeItemLocally: (itemIdOrProductId: string) => {
         const newItems = get().items.filter(
-          (item) => item.product.id !== productId
+          (item) =>
+            item.id !== itemIdOrProductId &&
+            item.product.id !== itemIdOrProductId
         );
         const newItemCount = newItems.reduce(
           (total, item) => total + item.quantity,
@@ -319,14 +443,16 @@ export const useCartStore = create<CartState>()(
         set({ total: newTotal, subtotal: newTotal });
       },
 
-      updateQuantityLocally: (productId: string, quantity: number) => {
+      updateQuantityLocally: (itemIdOrProductId: string, quantity: number) => {
         if (quantity <= 0) {
-          get().removeItemLocally(productId);
+          get().removeItemLocally(itemIdOrProductId);
           return;
         }
 
         const newItems = get().items.map((item) =>
-          item.product.id === productId ? { ...item, quantity } : item
+          item.id === itemIdOrProductId || item.product.id === itemIdOrProductId
+            ? { ...item, quantity }
+            : item
         );
         const newItemCount = newItems.reduce(
           (total, item) => total + item.quantity,
@@ -349,7 +475,12 @@ export const useCartStore = create<CartState>()(
 
       getTotalPrice: () => {
         return get().items.reduce((total, item) => {
-          const price = parseFloat(item.product.basePrice);
+          // Usar el precio del item si viene del backend, sino usar basePrice del producto
+          const price =
+            item.price ||
+            ("basePrice" in item.product
+              ? parseFloat(item.product.basePrice || "0")
+              : 0);
           return total + price * item.quantity;
         }, 0);
       },

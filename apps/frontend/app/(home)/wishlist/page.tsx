@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
@@ -9,16 +10,47 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, ShoppingCart, Trash2, Star } from "lucide-react";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { useCartStore } from "@/lib/stores/cart-store";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";
 
 export default function WishlistPage() {
-  const { items, removeItem, clearWishlist } = useWishlistStore();
+  const { items, removeItem, clearWishlist, fetchWishlist, isLoading } =
+    useWishlistStore();
   const addToCart = useCartStore((state) => state.addItem);
+  const { isAuthenticated, isHydrated } = useAuthStore();
+
+  // Cargar la wishlist cuando el componente se monta
+  useEffect(() => {
+    if (isAuthenticated && isHydrated) {
+      console.log("Fetching wishlist...");
+      fetchWishlist();
+    }
+  }, [isAuthenticated, isHydrated, fetchWishlist]);
+
+  // Debug: log items cuando cambien
+  useEffect(() => {
+    console.log("Wishlist items:", items);
+    console.log("Items length:", items.length);
+  }, [items]);
 
   const handleAddToCart = (product: any) => {
     addToCart(product);
     removeItem(product.id);
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+            <p className="text-muted-foreground">Cargando lista de deseos...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (items.length === 0) {
     return (
@@ -68,9 +100,16 @@ export default function WishlistPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {items.map((product) => {
-            const discountedPrice = product.discount
-              ? product.price * (1 - product.discount / 100)
-              : product.price;
+            const basePrice = parseFloat(product.basePrice);
+            const compareAtPrice = product.compareAtPrice
+              ? parseFloat(product.compareAtPrice)
+              : null;
+            const hasDiscount = compareAtPrice && compareAtPrice > basePrice;
+            const discountPercentage = hasDiscount
+              ? Math.round(
+                  ((compareAtPrice - basePrice) / compareAtPrice) * 100
+                )
+              : 0;
 
             return (
               <Card
@@ -82,14 +121,19 @@ export default function WishlistPage() {
                     <Link href={`/product/${product.id}`}>
                       <div className="aspect-square relative overflow-hidden rounded-t-lg">
                         <Image
-                          src={product.image || "/placeholder.svg"}
-                          alt={product.name}
+                          src={
+                            product.productImages?.[0]?.url ||
+                            "/placeholder.svg"
+                          }
+                          alt={
+                            product.productImages?.[0]?.altText || product.name
+                          }
                           fill
                           className="object-cover group-hover:scale-105 transition-transform duration-300"
                         />
-                        {product.discount && (
+                        {hasDiscount && (
                           <Badge className="absolute top-2 left-2 bg-destructive text-destructive-foreground">
-                            -{product.discount}%
+                            -{discountPercentage}%
                           </Badge>
                         )}
                       </div>
@@ -110,12 +154,12 @@ export default function WishlistPage() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
                           <span className="text-sm text-muted-foreground">
-                            {product.brand}
+                            {product.brand?.name || "Sin marca"}
                           </span>
                           <div className="flex items-center space-x-1">
                             <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                             <span className="text-xs text-muted-foreground">
-                              {product.rating}
+                              4.5
                             </span>
                           </div>
                         </div>
@@ -125,23 +169,23 @@ export default function WishlistPage() {
                         </h3>
 
                         <p className="text-sm text-muted-foreground line-clamp-2">
-                          {product.description}
+                          {product.shortDescription}
                         </p>
 
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            {product.discount ? (
+                            {hasDiscount ? (
                               <>
                                 <span className="font-bold text-lg text-card-foreground">
-                                  ${discountedPrice.toFixed(2)}
+                                  ${basePrice.toFixed(2)}
                                 </span>
                                 <span className="text-sm text-muted-foreground line-through">
-                                  ${product.price.toFixed(2)}
+                                  ${compareAtPrice?.toFixed(2)}
                                 </span>
                               </>
                             ) : (
                               <span className="font-bold text-lg text-card-foreground">
-                                ${product.price.toFixed(2)}
+                                ${basePrice.toFixed(2)}
                               </span>
                             )}
                           </div>
@@ -149,16 +193,14 @@ export default function WishlistPage() {
                           <span
                             className={cn(
                               "text-xs px-2 py-1 rounded-full",
-                              product.stock > 10
+                              product.isActive && product.status === "ACTIVE"
                                 ? "bg-green-100 text-green-800"
-                                : product.stock > 0
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
+                                : "bg-red-100 text-red-800"
                             )}
                           >
-                            {product.stock > 0
-                              ? `${product.stock} disponibles`
-                              : "Agotado"}
+                            {product.isActive && product.status === "ACTIVE"
+                              ? "Disponible"
+                              : "No disponible"}
                           </span>
                         </div>
                       </div>
@@ -168,11 +210,15 @@ export default function WishlistPage() {
                       <Button
                         className="flex-1"
                         onClick={() => handleAddToCart(product)}
-                        disabled={product.stock === 0}
+                        disabled={
+                          !product.isActive || product.status !== "ACTIVE"
+                        }
                         size="sm"
                       >
                         <ShoppingCart className="h-4 w-4 mr-2" />
-                        {product.stock === 0 ? "Agotado" : "Agregar"}
+                        {!product.isActive || product.status !== "ACTIVE"
+                          ? "No disponible"
+                          : "Agregar"}
                       </Button>
                       <Button
                         variant="outline"

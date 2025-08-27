@@ -145,7 +145,10 @@ export const useWishlistStore = create<WishlistState>()(
 
         try {
           const wishlistData = await wishlistApi.getWishlist();
-          set({ items: wishlistData.items });
+          console.log("Wishlist API response:", wishlistData);
+
+          // El backend ya devuelve los items con la estructura correcta
+          set({ items: wishlistData.items || [] });
         } catch (error) {
           const apiError = ApiErrorHandler.handleError(error);
           set({ error: apiError.message });
@@ -170,7 +173,10 @@ export const useWishlistStore = create<WishlistState>()(
           }
 
           const syncData: SyncWishlistDto = {
-            productIds: localItems.map((item) => item.id),
+            items: localItems.map((item) => ({
+              productId: item.id,
+              variantId: undefined, // No manejamos variantes por ahora
+            })),
           };
 
           const wishlistData = await wishlistApi.syncWishlist(syncData);
@@ -189,7 +195,7 @@ export const useWishlistStore = create<WishlistState>()(
           );
 
           // Actualizar estado con datos del servidor
-          set({ items: wishlistData.items });
+          set({ items: wishlistData.items || [] });
 
           // Notificar sobre cambios
           let message = "Lista de deseos sincronizada";

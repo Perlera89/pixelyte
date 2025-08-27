@@ -85,9 +85,7 @@ export const useInfiniteProducts = (filters: ProductFilters = {}) => {
       productsApi.getProducts({ ...filters, page: pageParam }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasNextPage
-        ? lastPage.pagination.page + 1
-        : undefined,
+      lastPage.hasNextPage ? lastPage.page + 1 : undefined,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });

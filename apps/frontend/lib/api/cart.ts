@@ -10,8 +10,7 @@ export interface CartResponse {
 }
 
 export interface AddToCartDto {
-  productId: string;
-  variantId?: string;
+  variantId: string;
   quantity: number;
 }
 
@@ -21,8 +20,7 @@ export interface UpdateCartItemDto {
 
 export interface SyncCartDto {
   items: Array<{
-    productId: string;
-    variantId?: string;
+    variantId: string;
     quantity: number;
   }>;
 }

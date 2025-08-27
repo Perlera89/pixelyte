@@ -654,9 +654,16 @@ export default function CheckoutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {items.map((item) => {
+                  // Usar el precio del item si viene del backend, sino usar basePrice del producto
+                  const basePrice =
+                    item.price ||
+                    ("basePrice" in item.product
+                      ? parseFloat(item.product.basePrice || "0")
+                      : item.product.price || 0);
+
                   const discountedPrice = item.product.discount
-                    ? item.product.price * (1 - item.product.discount / 100)
-                    : item.product.price;
+                    ? basePrice * (1 - item.product.discount / 100)
+                    : basePrice;
 
                   return (
                     <div

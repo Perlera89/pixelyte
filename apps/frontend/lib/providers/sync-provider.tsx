@@ -76,6 +76,8 @@ export function SyncProvider({
 
   // Efecto para mostrar notificaciones de estado de conexión
   useEffect(() => {
+    if (!showSyncNotifications) return;
+
     if (!isOnline) {
       toast.warning(
         "Sin conexión a internet. Los cambios se guardarán localmente.",
@@ -89,12 +91,15 @@ export function SyncProvider({
 
       // Si recuperamos la conexión y hay datos locales, sincronizar
       if (isAuthenticated && isHydrated) {
-        syncService.queueSync(async () => {
-          await syncWithStats();
-        });
+        // Usar setTimeout para evitar loops infinitos
+        setTimeout(() => {
+          syncService.queueSync(async () => {
+            await syncWithStats();
+          });
+        }, 100);
       }
     }
-  }, [isOnline, isAuthenticated, isHydrated]);
+  }, [isOnline, isAuthenticated, isHydrated, showSyncNotifications]);
 
   // Efecto para manejar errores de sincronización
   useEffect(() => {

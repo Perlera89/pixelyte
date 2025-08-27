@@ -17,16 +17,14 @@ export interface ProductFilters {
 }
 
 export interface ProductsResponse {
-  products: Product[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
-  };
-  filters: {
+  data: Product[];
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+  filters?: {
     categories: Array<{ id: string; name: string; slug: string }>;
     brands: Array<{ id: string; name: string; slug: string }>;
     priceRange: { min: number; max: number };
@@ -45,7 +43,9 @@ export const productsApi = {
       }
     });
 
-    const response = await api.get(`/products?${params.toString()}`);
+    const response = await api.get(
+      `/products/get-all-products?${params.toString()}`
+    );
     return response.data;
   },
 
@@ -68,7 +68,7 @@ export const productsApi = {
     query: string,
     filters: Omit<ProductFilters, "search"> = {}
   ): Promise<ProductsResponse> => {
-    const params = new URLSearchParams({ search: query });
+    const params = new URLSearchParams({ q: query });
 
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
@@ -76,7 +76,9 @@ export const productsApi = {
       }
     });
 
-    const response = await api.get(`/products/search?${params.toString()}`);
+    const response = await api.get(
+      `/products/search-simple?${params.toString()}`
+    );
     return response.data;
   },
 

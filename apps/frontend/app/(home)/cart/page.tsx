@@ -68,9 +68,18 @@ export default function CartPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {items.map((item) => {
-                  const discountedPrice = item.product.discount
-                    ? item.product.price * (1 - item.product.discount / 100)
-                    : item.product.price;
+                  // Usar el precio del item si viene del backend, sino usar basePrice del producto
+                  const basePrice =
+                    item.price ||
+                    ("basePrice" in item.product
+                      ? parseFloat(item.product.basePrice || "0")
+                      : 0);
+                  const comparePrice =
+                    "compareAtPrice" in item.product
+                      ? parseFloat(item.product.compareAtPrice || "0")
+                      : 0;
+                  const hasDiscount = comparePrice > basePrice;
+                  const discountedPrice = basePrice;
 
                   return (
                     <div
@@ -79,7 +88,12 @@ export default function CartPage() {
                     >
                       <div className="relative w-20 h-20 rounded-lg overflow-hidden">
                         <Image
-                          src={item.product.image || "/placeholder.svg"}
+                          src={
+                            ("image" in item.product
+                              ? item.product.image
+                              : item.product.productImages?.[0]?.url) ||
+                            "/placeholder.svg"
+                          }
                           alt={item.product.name}
                           fill
                           className="object-cover"
@@ -93,21 +107,23 @@ export default function CartPage() {
                           </h3>
                         </Link>
                         <p className="text-sm text-muted-foreground">
-                          {item.product.brand}
+                          {typeof item.product.brand === "string"
+                            ? item.product.brand
+                            : item.product.brand?.name || "Sin marca"}
                         </p>
                         <div className="flex items-center space-x-2 mt-1">
-                          {item.product.discount ? (
+                          {hasDiscount ? (
                             <>
                               <span className="font-semibold text-foreground">
                                 ${discountedPrice.toFixed(2)}
                               </span>
                               <span className="text-sm text-muted-foreground line-through">
-                                ${item.product.price.toFixed(2)}
+                                ${comparePrice.toFixed(2)}
                               </span>
                             </>
                           ) : (
                             <span className="font-semibold text-foreground">
-                              ${item.product.price.toFixed(2)}
+                              ${basePrice.toFixed(2)}
                             </span>
                           )}
                         </div>
@@ -118,7 +134,10 @@ export default function CartPage() {
                           variant="outline"
                           size="sm"
                           onClick={() =>
-                            updateQuantity(item.product.id, item.quantity - 1)
+                            updateQuantity(
+                              item.id || item.product.id,
+                              item.quantity - 1
+                            )
                           }
                           disabled={item.quantity <= 1}
                         >
@@ -131,9 +150,12 @@ export default function CartPage() {
                           variant="outline"
                           size="sm"
                           onClick={() =>
-                            updateQuantity(item.product.id, item.quantity + 1)
+                            updateQuantity(
+                              item.id || item.product.id,
+                              item.quantity + 1
+                            )
                           }
-                          disabled={item.quantity >= item.product.stock}
+                          disabled={item.quantity >= 99}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -146,7 +168,7 @@ export default function CartPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeItem(item.product.id)}
+                          onClick={() => removeItem(item.id || item.product.id)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -202,7 +224,7 @@ export default function CartPage() {
                 )}
 
                 <Button size="lg" className="w-full" asChild>
-                  <Link href="/checkout">Proceder al Checkout</Link>
+                  <Link href="/checkout">Proceder a Revisión</Link>
                 </Button>
 
                 <Button
