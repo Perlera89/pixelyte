@@ -18,16 +18,6 @@ export default function AdminLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  useEffect(() => {
-    if (!isAuthenticated || user?.role !== UserRole.ADMIN) {
-      router.push("/login");
-    }
-  }, [isAuthenticated, user, router]);
-
-  if (!isAuthenticated || user?.role !== UserRole.ADMIN) {
-    return null;
-  }
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };

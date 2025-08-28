@@ -40,6 +40,9 @@ export class DashboardMetricsDto {
 
   @ApiProperty({ description: 'Órdenes pendientes' })
   pendingOrders: number;
+
+  @ApiProperty({ description: 'Total de categorías activas' })
+  totalCategories: number;
 }
 
 export class SalesChartDataDto {

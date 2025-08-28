@@ -22,9 +22,12 @@ export default function CategoriesPage() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  const { data: categories = [], isLoading: categoriesLoading } =
+  const { data: categoriesResponse, isLoading: categoriesLoading } =
     useCategories();
-  const { data: products = [], isLoading: productsLoading } = useProducts();
+  const { data: productsResponse, isLoading: productsLoading } = useProducts();
+
+  const categories = categoriesResponse?.data || [];
+  const products = productsResponse?.data || [];
 
   const categoriesWithCounts = categories.map((category) => ({
     ...category,
@@ -107,7 +110,7 @@ export default function CategoriesPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {category.productCount} productos
+                      {category._count?.products || 0} productos
                     </Badge>
                   </TableCell>
                   <TableCell>

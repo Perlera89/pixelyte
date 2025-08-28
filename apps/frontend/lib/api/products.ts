@@ -124,7 +124,9 @@ export const productsApi = {
   getAllProducts: async (
     page = 1,
     limit = 12,
-    searchQuery?: string
+    searchQuery?: string,
+    sortBy?: string,
+    sortOrder?: 'asc' | 'desc'
   ): Promise<SearchProductsResponse> => {
     const params: Record<string, string> = {
       page: page.toString(),
@@ -132,7 +134,13 @@ export const productsApi = {
     };
 
     if (searchQuery) {
-      params.searchQuery = searchQuery;
+      params.q = searchQuery;
+    }
+    if (sortBy) {
+      params.sortBy = sortBy;
+    }
+    if (sortOrder) {
+      params.sortOrder = sortOrder;
     }
 
     const response = await api.get(`/products/get-all-products`, {

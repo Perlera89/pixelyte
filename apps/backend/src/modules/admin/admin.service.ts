@@ -41,6 +41,7 @@ export class AdminService {
       monthlyOrders,
       lowStockProducts,
       pendingOrders,
+      totalCategories,
     ] = await Promise.all([
       // Total de ventas del año
       this.prisma.order.aggregate({
@@ -89,6 +90,10 @@ export class AdminService {
       this.prisma.order.count({
         where: { status: OrderStatus.PENDING },
       }),
+      // Total de categorías activas
+      this.prisma.category.count({
+        where: { isActive: true },
+      }),
     ]);
 
     return {
@@ -100,6 +105,7 @@ export class AdminService {
       monthlyOrders,
       lowStockProducts,
       pendingOrders,
+      totalCategories,
     };
   }
 

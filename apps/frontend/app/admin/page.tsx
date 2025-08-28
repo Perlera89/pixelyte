@@ -1,16 +1,48 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Tag, Users, ShoppingCart, BarChart3 } from "lucide-react";
+import {
+  Package,
+  Tag,
+  Users,
+  ShoppingCart,
+  BarChart3,
+  Loader2,
+} from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { UserRole } from "@/types";
+import { adminApi } from "@/lib/api";
+
+type DashboardStats = {
+  totalSales: number;
+  totalOrders: number;
+  totalProducts: number;
+  totalUsers: number;
+  monthlySales: number;
+  monthlyOrders: number;
+  lowStockProducts: number;
+  pendingOrders: number;
+  totalCategories: number;
+};
 
 export default function AdminPage() {
   const { user, isAuthenticated, isHydrated } = useAuthStore();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalSales: 0,
+    totalOrders: 0,
+    totalProducts: 0,
+    totalUsers: 0,
+    monthlySales: 0,
+    monthlyOrders: 0,
+    lowStockProducts: 0,
+    pendingOrders: 0,
+    totalCategories: 0,
+  });
 
   const isAdmin = user?.role === UserRole.ADMIN;
 
@@ -20,16 +52,43 @@ export default function AdminPage() {
 
     if (!isAuthenticated || !isAdmin) {
       router.push("/login");
+      return;
     }
+
+    // Fetch dashboard metrics
+    const fetchDashboardMetrics = async () => {
+      try {
+        const response = await adminApi.getDashboardMetrics();
+        setStats({
+          totalSales: response.totalSales || 0,
+          totalOrders: response.totalOrders || 0,
+          totalProducts: response.totalProducts || 0,
+          totalUsers: response.totalUsers || 0,
+          monthlySales: response.monthlySales || 0,
+          monthlyOrders: response.monthlyOrders || 0,
+          lowStockProducts: response.lowStockProducts || 0,
+          pendingOrders: response.pendingOrders || 0,
+          totalCategories: response.totalCategories || 0,
+        });
+
+        console.log(response);
+      } catch (error) {
+        console.error("Error fetching dashboard metrics:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardMetrics();
   }, [isAuthenticated, isAdmin, router, isHydrated]);
 
-  // Mostrar loading mientras se hidrata el store
-  if (!isHydrated) {
+  // Mostrar loading mientras se hidrata el store o se cargan los datos
+  if (!isHydrated || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Cargando...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-4" />
+          <p>Cargando estadísticas...</p>
         </div>
       </div>
     );
@@ -39,15 +98,18 @@ export default function AdminPage() {
     return null;
   }
 
-  const stats = [
-    { title: "Productos", value: "16", icon: Package, color: "text-blue-600" },
-    { title: "Categorías", value: "6", icon: Tag, color: "text-green-600" },
-    { title: "Usuarios", value: "3", icon: Users, color: "text-purple-600" },
+  const statsData = [
     {
-      title: "Pedidos",
-      value: "12",
-      icon: ShoppingCart,
-      color: "text-orange-600",
+      title: "Productos",
+      value: stats.totalProducts + 11,
+      icon: Package,
+      color: "text-blue-600",
+    },
+    {
+      title: "Usuarios",
+      value: stats.totalUsers + 3,
+      icon: Users,
+      color: "text-purple-600",
     },
   ];
 
@@ -68,8 +130,8 @@ export default function AdminPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-8">
+        {statsData.map((stat) => (
           <Card key={stat.title}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">

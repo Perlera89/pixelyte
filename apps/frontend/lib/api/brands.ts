@@ -11,6 +11,14 @@ export interface BrandsResponse {
   hasPreviousPage: boolean;
 }
 
+export interface CreateBrandDto {
+  name: string;
+  slug: string;
+  description?: string;
+  logo?: string;
+  isActive?: boolean;
+}
+
 export const brandsApi = {
   getAllBrands: async (
     page = 1,
@@ -34,6 +42,11 @@ export const brandsApi = {
 
   getBrand: async (id: string): Promise<Brand> => {
     const response = await api.get(`/products/find-brand/${id}`);
+    return response.data;
+  },
+
+  addBrand: async (data: CreateBrandDto): Promise<Brand> => {
+    const response = await api.post('/products/add-brand', data);
     return response.data;
   },
 };

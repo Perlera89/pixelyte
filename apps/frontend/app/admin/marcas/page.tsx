@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
+import { ProductPagination } from "@/components/ui/product-pagination";
 import { BrandModal } from "@/components/product/brand-modal";
 import { useBrands } from "@/hooks/use-brands";
 
@@ -20,12 +21,34 @@ export default function MarcasPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const limit = 10;
 
-  const { data: brands = [], isLoading } = useBrands();
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to first page when searching
+    }, 500);
 
-  const filteredBrands = brands.filter((brand) =>
-    brand.name.toLowerCase().includes(searchTerm.toLowerCase())
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const { data: brandsResponse, isLoading } = useBrands(
+    currentPage,
+    limit,
+    debouncedSearchTerm || undefined
   );
+
+  const brands = brandsResponse?.data || [];
+  const totalPages = brandsResponse?.totalPages || 0;
+  const hasNextPage = brandsResponse?.hasNextPage || false;
+  const hasPreviousPage = brandsResponse?.hasPreviousPage || false;
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
   const handleEdit = (brand: any) => {
     setSelectedBrand(brand);
@@ -82,14 +105,14 @@ export default function MarcasPage() {
                   Cargando marcas...
                 </TableCell>
               </TableRow>
-            ) : filteredBrands.length === 0 ? (
+            ) : brands.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="text-center py-8">
                   No se encontraron marcas
                 </TableCell>
               </TableRow>
             ) : (
-              filteredBrands.map((brand) => (
+              brands.map((brand) => (
                 <TableRow key={brand.id}>
                   <TableCell className="font-medium">{brand.name}</TableCell>
                   <TableCell className="text-muted-foreground">
@@ -97,7 +120,7 @@ export default function MarcasPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">
-                      {Math.floor(Math.random() * 20) + 1} productos
+                      {brand._count?.products || 0} productos
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -126,9 +149,19 @@ export default function MarcasPage() {
         </Table>
       </div>
 
+      <div className="mt-4">
+        <ProductPagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
+          onPageChange={handlePageChange}
+        />
+      </div>
+
       <BrandModal
-        isOpen={showBrandModal}
-        onClose={() => setShowBrandModal(false)}
+        open={showBrandModal}
+        onOpenChange={setShowBrandModal}
         brand={selectedBrand}
       />
     </div>
