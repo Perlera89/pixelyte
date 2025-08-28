@@ -39,6 +39,8 @@ export function FeaturedProductsSection() {
     );
   }
 
+  console.log("featuredProducts", featuredProducts);
+
   if (error) {
     return (
       <section className="space-y-8">

@@ -422,6 +422,7 @@ export class ProductsService {
   async findAllProducts(
     paginationOptions: PaginationOptions,
   ): Promise<PaginatedResult<any>> {
+    console.log('Pagination options received:', paginationOptions);
     const {
       page = 1,
       limit = 10,
@@ -429,7 +430,15 @@ export class ProductsService {
       sortOrder = 'desc',
       searchQuery,
     } = paginationOptions;
+    console.log('Processed values:', {
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+      searchQuery,
+    });
     const offset = PaginationHelper.calculateOffset(page, limit);
+    console.log('Calculated offset:', offset);
     const where: any = {};
     if (searchQuery) {
       where.OR = [
@@ -439,32 +448,46 @@ export class ProductsService {
         { sku: { contains: searchQuery, mode: 'insensitive' } },
       ];
     }
-    const [products, totalCount] = await Promise.all([
-      this.prisma.product.findMany({
-        where,
-        skip: offset,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          brand: true,
-          category: true,
-          productImages: {
-            where: { isPrimary: true },
-            take: 1,
+    console.log('Prisma query params:', {
+      where,
+      skip: offset,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+    });
+
+    try {
+      const [products, totalCount] = await Promise.all([
+        this.prisma.product.findMany({
+          where,
+          skip: offset,
+          take: limit,
+          orderBy: { [sortBy]: sortOrder },
+          include: {
+            brand: true,
+            category: true,
+            productImages: {
+              where: { isPrimary: true },
+              take: 1,
+            },
+            _count: {
+              select: { variants: true },
+            },
           },
-          _count: {
-            select: { variants: true },
-          },
-        },
-      }),
-      this.prisma.product.count({ where }),
-    ]);
-    return PaginationHelper.createPaginatedResult(
-      products,
-      totalCount,
-      page,
-      limit,
-    );
+        }),
+        this.prisma.product.count({ where }),
+      ]);
+      console.log('Query successful');
+
+      return PaginationHelper.createPaginatedResult(
+        products,
+        totalCount,
+        page,
+        limit,
+      );
+    } catch (error) {
+      console.error('Prisma query error:', error);
+      throw error;
+    }
   }
 
   async findOneProduct(id: string) {

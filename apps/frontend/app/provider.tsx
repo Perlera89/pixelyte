@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { ThemeProvider } from "next-themes";
 import { QueryProvider } from "@/lib/providers/query-provider";
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { StoreHydration } from "@/components/providers/store-hydration";
 
 import { Toaster } from "@/components/ui/toaster";
 
@@ -21,8 +22,10 @@ export default function Providers({ children }: Props) {
     >
       <QueryProvider>
         <AuthProvider>
-          {children}
-          <Toaster />
+          <StoreHydration>
+            {children}
+            <Toaster />
+          </StoreHydration>
         </AuthProvider>
       </QueryProvider>
     </ThemeProvider>

@@ -7,12 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, ShoppingCart, Star, Minus, Plus } from "lucide-react";
-import { getProductById, products } from "@/lib/data/products";
+import {
+  Heart,
+  ShoppingCart,
+  Star,
+  Minus,
+  Plus,
+  ArrowLeft,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { useWishlistStore } from "@/lib/stores/wishlist-store";
 import { ProductGrid } from "@/components/home/product-grid";
 import { cn } from "@/lib/utils";
+import { useProduct, useRelatedProducts } from "@/hooks/use-products";
 
 interface ProductPageProps {
   params: {
@@ -23,14 +31,31 @@ interface ProductPageProps {
 export default function ProductPage({ params }: ProductPageProps) {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
+  const router = useRouter();
 
-  const product = getProductById(params.id);
+  const { data: product, isLoading } = useProduct(params.id);
+  const { data: relatedProducts = [] } = useRelatedProducts(params.id, 4);
   const addToCart = useCartStore((state) => state.addItem);
   const {
     addItem: addToWishlist,
     removeItem: removeFromWishlist,
     isInWishlist,
   } = useWishlistStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground">
+              Cargando producto...
+            </h1>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -48,14 +73,14 @@ export default function ProductPage({ params }: ProductPageProps) {
   }
 
   const isWishlisted = isInWishlist(product.id);
-  const discountedPrice = product.discount
-    ? product.price * (1 - product.discount / 100)
-    : product.price;
+  const basePrice = parseFloat(product.basePrice);
+  const compareAtPrice = product.compareAtPrice
+    ? parseFloat(product.compareAtPrice)
+    : null;
+  const discountedPrice =
+    compareAtPrice && compareAtPrice > basePrice ? basePrice : basePrice;
 
-  // Get related products (same category, excluding current product)
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  // Related products are now fetched using the useRelatedProducts hook
 
   const handleWishlistToggle = () => {
     if (isWishlisted) {
@@ -72,9 +97,8 @@ export default function ProductPage({ params }: ProductPageProps) {
   };
 
   const incrementQuantity = () => {
-    if (quantity < product.stock) {
-      setQuantity(quantity + 1);
-    }
+    // For now, we'll allow unlimited quantity since we don't have stock info from API
+    setQuantity(quantity + 1);
   };
 
   const decrementQuantity = () => {
@@ -87,19 +111,35 @@ export default function ProductPage({ params }: ProductPageProps) {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <div className="mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Volver
+          </Button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
           {/* Product Image */}
           <div className="space-y-4">
             <div className="aspect-square relative rounded-lg overflow-hidden">
               <Image
-                src={product.image || "/placeholder.svg"}
+                src={product.productImages?.[0]?.url || "/placeholder.svg"}
                 alt={product.name}
                 fill
                 className="object-cover"
               />
-              {product.discount && (
+              {compareAtPrice && compareAtPrice > basePrice && (
                 <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground">
-                  -{product.discount}%
+                  -
+                  {Math.round(
+                    ((compareAtPrice - basePrice) / compareAtPrice) * 100
+                  )}
+                  %
                 </Badge>
               )}
             </div>
@@ -109,7 +149,9 @@ export default function ProductPage({ params }: ProductPageProps) {
           <div className="space-y-6">
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-muted-foreground">{product.brand}</span>
+                <span className="text-muted-foreground">
+                  {product.brand?.name}
+                </span>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -133,83 +175,68 @@ export default function ProductPage({ params }: ProductPageProps) {
                       key={i}
                       className={cn(
                         "h-4 w-4",
-                        i < Math.floor(product.rating)
+                        i < 4 // Default rating since we don't have rating in API
                           ? "fill-yellow-400 text-yellow-400"
                           : "text-gray-300"
                       )}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  ({product.rating})
-                </span>
+                <span className="text-sm text-muted-foreground">(4.0)</span>
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center space-x-4">
-                {product.discount ? (
+                {compareAtPrice && compareAtPrice > basePrice ? (
                   <>
                     <span className="text-3xl font-bold text-foreground">
-                      ${discountedPrice.toFixed(2)}
+                      ${basePrice.toFixed(2)}
                     </span>
                     <span className="text-xl text-muted-foreground line-through">
-                      ${product.price.toFixed(2)}
+                      ${compareAtPrice.toFixed(2)}
                     </span>
                   </>
                 ) : (
                   <span className="text-3xl font-bold text-foreground">
-                    ${product.price.toFixed(2)}
+                    ${basePrice.toFixed(2)}
                   </span>
                 )}
               </div>
 
-              <div
-                className={cn(
-                  "inline-block px-3 py-1 rounded-full text-sm",
-                  product.stock > 10
-                    ? "bg-green-100 text-green-800"
-                    : product.stock > 0
-                      ? "bg-yellow-100 text-yellow-800"
-                      : "bg-red-100 text-red-800"
-                )}
-              >
-                {product.stock > 0 ? `${product.stock} disponibles` : "Agotado"}
+              <div className="inline-block px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                Disponible
               </div>
             </div>
 
-            {product.stock > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <span className="font-semibold">Cantidad:</span>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={decrementQuantity}
-                      disabled={quantity <= 1}
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="w-12 text-center">{quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={incrementQuantity}
-                      disabled={quantity >= product.stock}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-4">
+                <span className="font-semibold">Cantidad:</span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={decrementQuantity}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="w-12 text-center">{quantity}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={incrementQuantity}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-
-                <Button size="lg" className="w-full" onClick={handleAddToCart}>
-                  <ShoppingCart className="h-5 w-5 mr-2" />
-                  Agregar al Carrito - $
-                  {(discountedPrice * quantity).toFixed(2)}
-                </Button>
               </div>
-            )}
+
+              <Button size="lg" className="w-full" onClick={handleAddToCart}>
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Agregar al Carrito - ${(discountedPrice * quantity).toFixed(2)}
+              </Button>
+            </div>
           </div>
         </div>
 
@@ -227,11 +254,14 @@ export default function ProductPage({ params }: ProductPageProps) {
               <TabsContent value="description" className="mt-6">
                 <div className="prose max-w-none">
                   <p className="text-muted-foreground leading-relaxed">
-                    {product.description}
+                    {product.shortDescription}
                   </p>
                   <p className="text-muted-foreground leading-relaxed mt-4">
-                    Este producto de {product.brand} representa lo último en
-                    tecnología y diseño. Perfecto para usuarios que buscan
+                    {product.longDescription}
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed mt-4">
+                    Este producto de {product.brand?.name} representa lo último
+                    en tecnología y diseño. Perfecto para usuarios que buscan
                     calidad, rendimiento y confiabilidad en un solo dispositivo.
                   </p>
                 </div>
@@ -241,21 +271,23 @@ export default function ProductPage({ params }: ProductPageProps) {
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span className="font-semibold">Marca:</span>
-                      <span>{product.brand}</span>
+                      <span>{product.brand?.name}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-semibold">Categoría:</span>
-                      <span className="capitalize">{product.category}</span>
+                      <span className="capitalize">
+                        {product.category?.name}
+                      </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="font-semibold">Calificación:</span>
-                      <span>{product.rating}/5</span>
+                      <span className="font-semibold">SKU:</span>
+                      <span>{product.sku}</span>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="font-semibold">Stock:</span>
-                      <span>{product.stock} unidades</span>
+                      <span className="font-semibold">Peso:</span>
+                      <span>{product.weight}g</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="font-semibold">Garantía:</span>
@@ -263,7 +295,11 @@ export default function ProductPage({ params }: ProductPageProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="font-semibold">Envío:</span>
-                      <span>Gratis</span>
+                      <span>
+                        {product.requiresShipping
+                          ? "Requerido"
+                          : "No requerido"}
+                      </span>
                     </div>
                   </div>
                 </div>

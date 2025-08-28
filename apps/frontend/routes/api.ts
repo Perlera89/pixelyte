@@ -4,14 +4,12 @@ import { ApiErrorHandler } from "@/lib/api/error-handler";
 // Crear instancia de axios
 export const api = axios.create({
   baseURL: "http://localhost:4000/",
-  withCredentials: true, // Importante para enviar cookies
-  timeout: 10000, // 10 second timeout
+  withCredentials: true,
+  timeout: 10000,
 });
 
-// Interceptor para añadir el token a las peticiones
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get token from auth store instead of localStorage directly
     const authStorage = localStorage.getItem("auth-storage");
     if (authStorage) {
       try {
@@ -38,7 +36,6 @@ api.interceptors.response.use(
     const apiError = ApiErrorHandler.handleError(error);
 
     if (ApiErrorHandler.shouldRedirectToLogin(apiError)) {
-      // Clear auth data and redirect to login
       localStorage.removeItem("auth-storage");
       window.location.href = "/login";
     }

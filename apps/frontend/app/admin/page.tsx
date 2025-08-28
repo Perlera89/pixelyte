@@ -6,12 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Package, Tag, Users, ShoppingCart, BarChart3 } from "lucide-react";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { useCartStore } from "@/lib/stores/cart-store";
 import { UserRole } from "@/types";
 
 export default function AdminPage() {
   const { user, isAuthenticated, isHydrated } = useAuthStore();
-  const { items } = useCartStore();
   const router = useRouter();
 
   const isAdmin = user?.role === UserRole.ADMIN;

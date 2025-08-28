@@ -3,13 +3,37 @@ import { Brand } from "@/types";
 
 export interface BrandsResponse {
   data: Brand[];
-  success: boolean;
-  message?: string;
+  totalCount: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }
 
 export const brandsApi = {
-  getAllBrands: async (): Promise<BrandsResponse> => {
-    const response = await api.get("/products/get-all-brands");
+  getAllBrands: async (
+    page = 1,
+    limit = 50,
+    searchQuery?: string
+  ): Promise<BrandsResponse> => {
+    const params: Record<string, string> = {
+      page: page.toString(),
+      limit: limit.toString(),
+    };
+
+    if (searchQuery) {
+      params.searchQuery = searchQuery;
+    }
+
+    const response = await api.get(`/products/get-all-brands`, {
+      params,
+    });
+    return response.data;
+  },
+
+  getBrand: async (id: string): Promise<Brand> => {
+    const response = await api.get(`/products/find-brand/${id}`);
     return response.data;
   },
 };

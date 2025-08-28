@@ -14,22 +14,28 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
 import { CategoryModal } from "@/components/product/category-modal";
-import { categories } from "@/lib/data/brands";
-import { products } from "@/lib/data/products";
+import { useCategories } from "@/hooks/use-categories";
+import { useProducts } from "@/hooks/use-products";
 
 export default function CategoriesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
+  const { data: categories = [], isLoading: categoriesLoading } =
+    useCategories();
+  const { data: products = [], isLoading: productsLoading } = useProducts();
+
   const categoriesWithCounts = categories.map((category) => ({
     ...category,
-    productCount: products.filter((p) => p.category === category.id).length,
+    productCount: products.filter((p) => p.categoryId === category.id).length,
   }));
 
   const filteredCategories = categoriesWithCounts.filter((category) =>
     category.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const isLoading = categoriesLoading || productsLoading;
 
   const handleEdit = (category: any) => {
     setSelectedCategory(category);
@@ -80,36 +86,54 @@ export default function CategoriesPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredCategories.map((category) => (
-              <TableRow key={category.id}>
-                <TableCell className="font-medium">{category.name}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {category.description || "Sin descripción"}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {category.productCount} productos
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="default">Activa</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(category)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  Cargando categorías...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredCategories.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  No se encontraron categorías
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredCategories.map((category) => (
+                <TableRow key={category.id}>
+                  <TableCell className="font-medium">{category.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {category.description || "Sin descripción"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {category.productCount} productos
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={category.isActive ? "default" : "secondary"}
+                    >
+                      {category.isActive ? "Activa" : "Inactiva"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(category)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

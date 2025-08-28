@@ -127,7 +127,7 @@ export function Navbar() {
                 <Link href="/wishlist">
                   <Button variant="ghost" size="sm" className="relative">
                     <Heart className="h-4 w-4" />
-                    {isAuthenticated && wishlistItems > 0 && (
+                    {wishlistItems > 0 && (
                       <Badge
                         variant="destructive"
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
@@ -142,7 +142,7 @@ export function Navbar() {
                 <Link href="/cart">
                   <Button variant="ghost" size="sm" className="relative">
                     <ShoppingCart className="h-4 w-4" />
-                    {isAuthenticated && totalItems > 0 && (
+                    {totalItems > 0 && (
                       <Badge
                         variant="destructive"
                         className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"

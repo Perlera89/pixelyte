@@ -17,10 +17,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Search, Loader2 } from "lucide-react";
-import { searchProducts, categories } from "@/lib/data/products";
-import type { Product } from "@/lib/stores/cart-store";
+import { productsApi, SearchProductsResponse } from "@/lib/api/products";
+import { useCategories } from "@/hooks/use-categories";
 import Link from "next/link";
 
 type SortOption =
@@ -34,9 +33,9 @@ export default function SearchPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
 
-  const [searchQuery, setSearchQuery] = useState(query);
   const [isLoading, setIsLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchResults, setSearchResults] =
+    useState<SearchProductsResponse | null>(null);
   const [sortOption, setSortOption] = useState<SortOption>("relevance");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000]);
   const [filters, setFilters] = useState({
@@ -44,81 +43,101 @@ export default function SearchPage() {
     brand: "",
     inStock: false,
     onSale: false,
-    rating: 0,
   });
+  const [error, setError] = useState<string | null>(null);
+
+  // Get categories from API
+  const { data: categoriesData } = useCategories();
 
   // Perform search
   useEffect(() => {
     const performSearch = async () => {
       if (!query.trim()) {
-        setSearchResults([]);
+        setSearchResults(null);
         return;
       }
 
       setIsLoading(true);
-      // Simulate search delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      setError(null);
 
-      const results = searchProducts(query);
-      setSearchResults(results);
-      setIsLoading(false);
+      try {
+        const results = await productsApi.searchProducts(query, 1, 50); // Get more results for filtering
+        setSearchResults(results);
+      } catch (err) {
+        console.error("Error searching products:", err);
+        setError("Error al buscar productos. Por favor, intenta de nuevo.");
+        setSearchResults(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     performSearch();
   }, [query]);
 
   // Get unique brands and categories from search results
-  const availableBrands = Array.from(
-    new Set(searchResults.map((product) => product.brand))
-  );
-  const availableCategories = Array.from(
-    new Set(searchResults.map((product) => product.category))
-  );
+  const availableBrands = searchResults
+    ? Array.from(
+        new Set(searchResults.data.map((product) => product.brand.name))
+      )
+    : [];
+  const availableCategories = searchResults
+    ? Array.from(
+        new Set(searchResults.data.map((product) => product.category.id))
+      )
+    : [];
 
   const filteredAndSortedResults = useMemo(() => {
-    const filtered = searchResults.filter((product) => {
-      if (filters.category && product.category !== filters.category)
+    if (!searchResults) return [];
+
+    const filtered = searchResults.data.filter((product) => {
+      const basePrice = parseFloat(product.basePrice);
+      const compareAtPrice = parseFloat(product.compareAtPrice || "0");
+
+      if (filters.category && product.category.id !== filters.category)
         return false;
-      if (filters.brand && product.brand !== filters.brand) return false;
-      if (filters.inStock && product.stock === 0) return false;
-      if (filters.onSale && !product.discount) return false;
-      if (filters.rating && product.rating < filters.rating) return false;
-      return product.price >= priceRange[0] && product.price <= priceRange[1];
+      if (filters.brand && product.brand.name !== filters.brand) return false;
+      if (filters.inStock && !product.isActive) return false;
+      if (
+        filters.onSale &&
+        (!product.compareAtPrice || basePrice >= compareAtPrice)
+      )
+        return false;
+      return basePrice >= priceRange[0] && basePrice <= priceRange[1];
     });
 
     // Sort results
     switch (sortOption) {
       case "price-low":
         filtered.sort((a, b) => {
-          const priceA = a.discount
-            ? a.price * (1 - a.discount / 100)
-            : a.price;
-          const priceB = b.discount
-            ? b.price * (1 - b.discount / 100)
-            : b.price;
+          const priceA = parseFloat(a.basePrice);
+          const priceB = parseFloat(b.basePrice);
           return priceA - priceB;
         });
         break;
       case "price-high":
         filtered.sort((a, b) => {
-          const priceA = a.discount
-            ? a.price * (1 - a.discount / 100)
-            : a.price;
-          const priceB = b.discount
-            ? b.price * (1 - b.discount / 100)
-            : b.price;
+          const priceA = parseFloat(a.basePrice);
+          const priceB = parseFloat(b.basePrice);
           return priceB - priceA;
         });
         break;
       case "rating":
-        filtered.sort((a, b) => b.rating - a.rating);
+        filtered.sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return 0;
+        });
         break;
       case "newest":
-        filtered.sort((a, b) => Number.parseInt(b.id) - Number.parseInt(a.id));
+        filtered.sort((a, b) => {
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
         break;
       case "relevance":
       default:
-        // Keep original search relevance order
         break;
     }
 
@@ -131,17 +150,9 @@ export default function SearchPage() {
       brand: "",
       inStock: false,
       onSale: false,
-      rating: 0,
     });
     setPriceRange([0, 5000]);
     setSortOption("relevance");
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/buscar?q=${encodeURIComponent(searchQuery.trim())}`;
-    }
   };
 
   return (
@@ -149,46 +160,20 @@ export default function SearchPage() {
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Search Header */}
-        <div className="mb-8">
-          <form onSubmit={handleSearch} className="max-w-2xl mx-auto mb-6">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-12 text-lg h-12"
-              />
-              <Button
-                type="submit"
-                size="sm"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-10 w-10 p-0"
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </form>
-
-          {query && (
-            <div className="text-center">
-              <h1 className="text-2xl font-bold text-foreground font-sans mb-2">
-                Resultados para "{query}"
-              </h1>
-              {isLoading ? (
-                <div className="flex items-center justify-center space-x-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-muted-foreground">Buscando...</span>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  {filteredAndSortedResults.length} producto
-                  {filteredAndSortedResults.length !== 1 ? "s" : ""} encontrado
-                  {filteredAndSortedResults.length !== 1 ? "s" : ""}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
+        {query && (
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold text-foreground font-sans mb-2">
+              Resultados para "{query}"
+            </h1>
+            {!isLoading && (
+              <p className="text-muted-foreground">
+                {filteredAndSortedResults.length} producto
+                {filteredAndSortedResults.length !== 1 ? "s" : ""} encontrado
+                {filteredAndSortedResults.length !== 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
+        )}
 
         {!query.trim() ? (
           <div className="text-center py-16">
@@ -197,13 +182,15 @@ export default function SearchPage() {
               ¿Qué estás buscando?
             </h2>
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Usa la barra de búsqueda para encontrar productos específicos,
-              marcas o categorías.
+              Usa la barra de búsqueda del menú para encontrar productos
+              específicos, marcas o categorías.
             </p>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto">
-              {categories.map((category) => (
+              {categoriesData?.data?.map((category) => (
                 <Button key={category.id} variant="outline" asChild>
-                  <Link href={`/category/${category.id}`}>{category.name}</Link>
+                  <Link href={`/category/${category.slug}`}>
+                    {category.name}
+                  </Link>
                 </Button>
               ))}
             </div>
@@ -213,7 +200,20 @@ export default function SearchPage() {
             <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
             <p className="text-muted-foreground">Buscando productos...</p>
           </div>
-        ) : searchResults.length === 0 ? (
+        ) : error ? (
+          <div className="text-center py-16">
+            <Search className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-foreground font-sans mb-4">
+              Error en la búsqueda
+            </h2>
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+              {error}
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Intentar de nuevo
+            </Button>
+          </div>
+        ) : !searchResults || searchResults.data.length === 0 ? (
           <div className="text-center py-16">
             <Search className="h-24 w-24 text-muted-foreground mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-foreground font-sans mb-4">
@@ -253,7 +253,6 @@ export default function SearchPage() {
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Price Range */}
                   <div>
                     <h3 className="font-semibold mb-3">Rango de Precio</h3>
                     <Slider
@@ -286,13 +285,12 @@ export default function SearchPage() {
                           <SelectValue placeholder="Todas las categorías" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">
-                            Todas las categorías
-                          </SelectItem>
-                          {availableCategories.map((category) => (
-                            <SelectItem key={category} value={category}>
-                              {categories.find((c) => c.id === category)
-                                ?.name || category}
+                          <SelectItem value="">Todas las categorías</SelectItem>
+                          {availableCategories.map((categoryId) => (
+                            <SelectItem key={categoryId} value={categoryId}>
+                              {categoriesData?.data?.find(
+                                (c) => c.id === categoryId
+                              )?.name || categoryId}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -314,10 +312,10 @@ export default function SearchPage() {
                           <SelectValue placeholder="Todas las marcas" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="all">Todas las marcas</SelectItem>
-                          {availableBrands.map((brand) => (
-                            <SelectItem key={brand} value={brand}>
-                              {brand}
+                          <SelectItem value="">Todas las marcas</SelectItem>
+                          {availableBrands.map((brandName) => (
+                            <SelectItem key={brandName} value={brandName}>
+                              {brandName}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -335,7 +333,7 @@ export default function SearchPage() {
                       }
                     />
                     <label htmlFor="inStock" className="text-sm font-medium">
-                      Solo productos en stock
+                      Solo productos activos
                     </label>
                   </div>
 
@@ -351,31 +349,6 @@ export default function SearchPage() {
                     <label htmlFor="onSale" className="text-sm font-medium">
                       Solo productos en oferta
                     </label>
-                  </div>
-
-                  {/* Rating Filter */}
-                  <div>
-                    <h3 className="font-semibold mb-3">Calificación mínima</h3>
-                    <Select
-                      value={filters.rating.toString()}
-                      onValueChange={(value) =>
-                        setFilters({
-                          ...filters,
-                          rating: Number.parseFloat(value),
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Cualquier calificación" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">
-                          Cualquier calificación
-                        </SelectItem>
-                        <SelectItem value="4">4+ estrellas</SelectItem>
-                        <SelectItem value="4.5">4.5+ estrellas</SelectItem>
-                      </SelectContent>
-                    </Select>
                   </div>
                 </CardContent>
               </Card>
@@ -404,7 +377,7 @@ export default function SearchPage() {
                     <SelectItem value="price-high">
                       Precio: Mayor a Menor
                     </SelectItem>
-                    <SelectItem value="rating">Mejor Calificados</SelectItem>
+                    <SelectItem value="rating">Destacados</SelectItem>
                     <SelectItem value="newest">Más Recientes</SelectItem>
                   </SelectContent>
                 </Select>

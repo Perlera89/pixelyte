@@ -28,8 +28,15 @@ import { ProductsService } from './products.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 import { CreateBrandDto, UpdateBrandDto } from './dto/brand.dto';
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
-import { ProductFiltersDto, ProductSearchDto } from './dto/product-filters.dto';
-import { PaginationOptions } from '../../common/utils/pagination.util';
+import {
+  ProductFiltersDto,
+  ProductSearchDto,
+  GetAllProductsDto,
+} from './dto/product-filters.dto';
+import {
+  PaginationOptions,
+  PaginationOptionsDto,
+} from '../../common/utils/pagination.util';
 import { Public } from '../../common/decorators/public.decorator';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { ImageValidationPipe } from '../../common/pipes/file-validation.pipe';
@@ -123,29 +130,13 @@ export class ProductsController {
     summary: 'Obtener lista paginada de productos',
     description: 'Devuelve una lista paginada de productos.',
   })
-  @ApiQuery({ name: 'page', required: false, description: 'Número de página' })
-  @ApiQuery({
-    name: 'limit',
-    required: false,
-    description: 'Elementos por página',
-  })
-  @ApiQuery({
-    name: 'searchQuery',
-    required: false,
-    description: 'Palabra clave para búsqueda',
-  })
   @ApiResponse({
     status: 200,
     description: 'Lista de productos obtenida exitosamente',
   })
-  findAll(
-    @Query() paginationOptions: PaginationOptions,
-    @Query('searchQuery') searchQuery?: string,
-  ) {
-    return this.productsService.findAllProducts({
-      ...paginationOptions,
-      searchQuery,
-    });
+  findAll(@Query() paginationOptions: PaginationOptionsDto) {
+    console.log('Controller received:', paginationOptions);
+    return this.productsService.findAllProducts(paginationOptions);
   }
 
   @ApiTags('5. Productos')
@@ -259,7 +250,7 @@ export class ProductsController {
   @ApiResponse({ status: 404, description: 'Categoría no encontrada' })
   getProductsByCategory(
     @Param('categorySlug') categorySlug: string,
-    @Query() paginationOptions: PaginationOptions,
+    @Query() paginationOptions: PaginationOptionsDto,
   ) {
     return this.productsService.getProductsByCategory(
       categorySlug,
@@ -511,6 +502,7 @@ export class ProductsController {
   }
 
   @ApiTags('6. Categorías')
+  @Public()
   @Get('get-all-categories')
   @ApiOperation({
     summary: 'Obtener lista paginada de categorías',
@@ -531,14 +523,8 @@ export class ProductsController {
     status: 200,
     description: 'Lista de categorías obtenida exitosamente',
   })
-  findAllCategories(
-    @Query() paginationOptions: PaginationOptions,
-    @Query('searchQuery') searchQuery?: string,
-  ) {
-    return this.productsService.findAllCategories({
-      ...paginationOptions,
-      searchQuery,
-    });
+  findAllCategories(@Query() paginationOptions: PaginationOptionsDto) {
+    return this.productsService.findAllCategories(paginationOptions);
   }
 
   @ApiTags('6. Categorías')
@@ -666,6 +652,7 @@ export class ProductsController {
   }
 
   @ApiTags('7. Marcas')
+  @Public()
   @Get('get-all-brands')
   @ApiOperation({
     summary: 'Obtener lista paginada de marcas',
@@ -686,14 +673,8 @@ export class ProductsController {
     status: 200,
     description: 'Lista de marcas obtenida exitosamente',
   })
-  findAllBrands(
-    @Query() paginationOptions: PaginationOptions,
-    @Query('searchQuery') searchQuery?: string,
-  ) {
-    return this.productsService.findAllBrands({
-      ...paginationOptions,
-      searchQuery,
-    });
+  findAllBrands(@Query() paginationOptions: PaginationOptionsDto) {
+    return this.productsService.findAllBrands(paginationOptions);
   }
 
   @ApiTags('7. Marcas')

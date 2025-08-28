@@ -17,7 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useCategories } from "@/hooks/use-categories";
 import { useProductsByCategory } from "@/hooks/use-products";
 import { useBrands } from "@/hooks/use-brands";
-import { categoriesList } from "@/lib/data/products";
 
 type SortOption = "featured" | "price-low" | "price-high" | "rating" | "newest";
 
@@ -29,6 +28,23 @@ interface CategoryPageProps {
 
 export default function CategoryPage({ params }: CategoryPageProps) {
   const { category } = use(params);
+
+  // Verificar que category existe antes de hacer las llamadas a la API
+  if (!category) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-foreground">
+              Categoría no válida
+            </h1>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   const { data: categoriesResponse } = useCategories();
   const { data: brandsResponse } = useBrands();
   const [sortOption, setSortOption] = useState<SortOption>("featured");
@@ -49,7 +65,7 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     data: productsResponse,
     isLoading: productsLoading,
     error: productsError,
-  } = useProductsByCategory(category, {});
+  } = useProductsByCategory(category, 1, 50); // Obtener más productos para filtrar localmente
 
   // Obtener marcas disponibles
   const brands = brandsResponse?.data || [];
@@ -61,24 +77,21 @@ export default function CategoryPage({ params }: CategoryPageProps) {
   const availablePriceRange = useMemo(() => {
     if (allProducts.length === 0) return { min: 0, max: 3000 };
 
-    const prices = allProducts.map((product: any) =>
-      parseFloat(product.basePrice)
-    );
+    const prices = allProducts
+      .map((product: any) => parseFloat(product.basePrice))
+      .filter((price) => !isNaN(price) && price > 0);
+
+    if (prices.length === 0) return { min: 0, max: 3000 };
+
     return {
       min: Math.min(...prices),
       max: Math.max(...prices),
     };
-  }, [allProducts]);
+  }, [allProducts.length]); // Solo depender de la longitud para evitar recálculos innecesarios
 
   // Aplicar filtros y ordenamiento localmente para evitar recargas
   const filteredAndSortedProducts = useMemo(() => {
-    console.log("=== FILTROS DEBUG ===");
-    console.log("Productos totales:", allProducts.length);
-    console.log("Filtros:", filters);
-    console.log("Precio rango:", priceRange);
-
     if (allProducts.length === 0) {
-      console.log("No hay productos para filtrar");
       return [];
     }
 
@@ -87,65 +100,34 @@ export default function CategoryPage({ params }: CategoryPageProps) {
     // Filtro de precio
     result = result.filter((product: any) => {
       const price = parseFloat(product.basePrice);
-      const inRange = price >= priceRange[0] && price <= priceRange[1];
-      if (!inRange) {
-        console.log(
-          `Producto ${product.name} filtrado por precio: ${price} no está en rango [${priceRange[0]}, ${priceRange[1]}]`
-        );
-      }
-      return inRange;
+      return !isNaN(price) && price >= priceRange[0] && price <= priceRange[1];
     });
 
     // Filtro de marca
     if (filters.brand) {
-      result = result.filter((product: any) => {
-        const matches = product.brand?.slug === filters.brand;
-        if (!matches) {
-          console.log(
-            `Producto ${product.name} filtrado por marca: ${product.brand?.slug} !== ${filters.brand}`
-          );
-        }
-        return matches;
-      });
+      result = result.filter(
+        (product: any) => product.brand?.slug === filters.brand
+      );
     }
 
     // Filtro de productos activos
     if (filters.inStock) {
-      result = result.filter((product: any) => {
-        const isActive = product.isActive;
-        if (!isActive) {
-          console.log(`Producto ${product.name} filtrado por stock: no activo`);
-        }
-        return isActive;
-      });
+      result = result.filter((product: any) => product.isActive);
     }
 
     // Filtro de productos en oferta
     if (filters.onSale) {
       result = result.filter((product: any) => {
-        const hasDiscount =
+        return (
           product.compareAtPrice &&
-          parseFloat(product.compareAtPrice) > parseFloat(product.basePrice);
-        if (!hasDiscount) {
-          console.log(
-            `Producto ${product.name} filtrado por oferta: no tiene descuento`
-          );
-        }
-        return hasDiscount;
+          parseFloat(product.compareAtPrice) > parseFloat(product.basePrice)
+        );
       });
     }
 
     // Filtro de productos destacados
     if (filters.rating > 0) {
-      result = result.filter((product: any) => {
-        const isFeatured = product.isFeatured;
-        if (!isFeatured) {
-          console.log(
-            `Producto ${product.name} filtrado por destacado: no es destacado`
-          );
-        }
-        return isFeatured;
-      });
+      result = result.filter((product: any) => product.isFeatured);
     }
 
     // Aplicar ordenamiento
@@ -180,17 +162,27 @@ export default function CategoryPage({ params }: CategoryPageProps) {
         break;
     }
 
-    console.log(`Productos finales después de ordenar: ${result.length}`);
-    console.log("=== FIN FILTROS DEBUG ===");
     return result;
   }, [allProducts, priceRange, filters, sortOption]);
 
-  // Actualizar el rango de precios máximo cuando cambien los datos
+  // Inicializar el rango de precios una sola vez cuando se cargan los productos
   useEffect(() => {
-    if (availablePriceRange.max > 0 && priceRange[1] === 3000) {
-      setPriceRange([availablePriceRange.min, availablePriceRange.max]);
+    if (
+      allProducts.length > 0 &&
+      priceRange[0] === 0 &&
+      priceRange[1] === 3000
+    ) {
+      const prices = allProducts
+        .map((product: any) => parseFloat(product.basePrice))
+        .filter((price) => !isNaN(price) && price > 0);
+
+      if (prices.length > 0) {
+        const min = Math.min(...prices);
+        const max = Math.max(...prices);
+        setPriceRange([min, max]);
+      }
     }
-  }, [availablePriceRange.max, availablePriceRange.min, priceRange]);
+  }, [allProducts.length]); // Solo ejecutar cuando cambie la cantidad de productos
 
   const clearFilters = useCallback(() => {
     setFilters({
@@ -199,9 +191,9 @@ export default function CategoryPage({ params }: CategoryPageProps) {
       onSale: false,
       rating: 0,
     });
-    setPriceRange([availablePriceRange.min, availablePriceRange.max]);
+    setPriceRange([0, 3000]); // Usar valores fijos para evitar dependencias
     setSortOption("featured");
-  }, [availablePriceRange.min, availablePriceRange.max]);
+  }, []); // Sin dependencias para evitar recreaciones
 
   // Estados de carga y error
   if (productsLoading) {
@@ -241,7 +233,8 @@ export default function CategoryPage({ params }: CategoryPageProps) {
 
   // Solo mostrar error si no encontramos la categoría en ningún lado
   const finalCategoryData =
-    categoryData || categoriesList.find((cat) => cat.slug === category);
+    categoryData ||
+    categoriesResponse?.data?.find((cat) => cat.slug === category);
 
   if (!finalCategoryData) {
     return (

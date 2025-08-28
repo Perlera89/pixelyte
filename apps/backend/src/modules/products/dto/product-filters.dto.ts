@@ -193,3 +193,34 @@ export class ProductSearchDto {
   @Max(100)
   limit?: number;
 }
+
+export class GetAllProductsDto {
+  @ApiPropertyOptional({
+    description: 'Número de página para paginación',
+    example: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    description: 'Número de elementos por página',
+    example: 12,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Término de búsqueda para filtrar productos',
+    example: 'laptop',
+  })
+  @IsOptional()
+  @IsString()
+  searchQuery?: string;
+}

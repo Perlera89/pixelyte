@@ -8,7 +8,6 @@ interface CartState {
   items: CartItem[];
   subtotal: number;
   total: number;
-  itemCount: number;
 
   // Loading states
   isLoading: boolean;
@@ -47,7 +46,6 @@ export const useCartStore = create<CartState>()(
       items: [],
       subtotal: 0,
       total: 0,
-      itemCount: 0,
       isLoading: false,
       isAddingItem: false,
       isUpdatingItem: false,
@@ -100,13 +98,8 @@ export const useCartStore = create<CartState>()(
         }
 
         // Update computed values
-        const newItems = get().items;
-        const newItemCount = newItems.reduce(
-          (total, item) => total + item.quantity,
-          0
-        );
         const newTotal = get().getTotalPrice();
-        set({ itemCount: newItemCount, total: newTotal, subtotal: newTotal });
+        set({ total: newTotal, subtotal: newTotal });
       },
 
       removeItemLocally: (itemIdOrProductId: string) => {
@@ -115,11 +108,7 @@ export const useCartStore = create<CartState>()(
             item.id !== itemIdOrProductId &&
             item.product.id !== itemIdOrProductId
         );
-        const newItemCount = newItems.reduce(
-          (total, item) => total + item.quantity,
-          0
-        );
-        set({ items: newItems, itemCount: newItemCount });
+        set({ items: newItems });
 
         const newTotal = get().getTotalPrice();
         set({ total: newTotal, subtotal: newTotal });
@@ -136,18 +125,14 @@ export const useCartStore = create<CartState>()(
             ? { ...item, quantity }
             : item
         );
-        const newItemCount = newItems.reduce(
-          (total, item) => total + item.quantity,
-          0
-        );
-        set({ items: newItems, itemCount: newItemCount });
+        set({ items: newItems });
 
         const newTotal = get().getTotalPrice();
         set({ total: newTotal, subtotal: newTotal });
       },
 
       clearCartLocally: () => {
-        set({ items: [], subtotal: 0, total: 0, itemCount: 0 });
+        set({ items: [], subtotal: 0, total: 0 });
       },
 
       // Computed values
@@ -177,7 +162,6 @@ export const useCartStore = create<CartState>()(
         items: state.items,
         subtotal: state.subtotal,
         total: state.total,
-        itemCount: state.itemCount,
       }),
     }
   )

@@ -55,3 +55,41 @@ export interface ProductResponse {
   hasNextPage: boolean;
   hasPreviousPage: boolean;
 }
+
+export interface CreateProductRequest {
+  sku: string;
+  name: string;
+  slug: string;
+  shortDescription?: string;
+  longDescription?: string;
+  brandId?: string;
+  categoryId: string;
+  basePrice: number;
+  compareAtPrice?: number;
+  costPrice?: number;
+  weight?: number;
+  dimensions?: string | Dimensions;
+  requiresShipping?: boolean;
+  isDigital?: boolean;
+  isFeatured?: boolean;
+  isActive?: boolean;
+  status?: "ACTIVE" | "INACTIVE" | "DRAFT" | "ARCHIVED";
+  seoTitle?: string;
+  seoDescription?: string;
+}
+
+export interface UpdateProductRequest extends Partial<CreateProductRequest> {
+  id: string;
+}
+
+export interface CreateProductResponse {
+  success: boolean;
+  data: Product;
+  message?: string;
+}
+
+export interface UpdateProductResponse {
+  success: boolean;
+  data: Product;
+  message?: string;
+}

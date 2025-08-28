@@ -7,6 +7,7 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { AdminHeader } from "@/components/layout/admin-header";
 import { SidebarProvider } from "@/components/ui/sidebar";
+import { UserRole } from "@/types";
 
 export default function AdminLayout({
   children,
@@ -18,12 +19,12 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.role !== "admin") {
+    if (!isAuthenticated || user?.role !== UserRole.ADMIN) {
       router.push("/login");
     }
   }, [isAuthenticated, user, router]);
 
-  if (!isAuthenticated || user?.role !== "admin") {
+  if (!isAuthenticated || user?.role !== UserRole.ADMIN) {
     return null;
   }
 

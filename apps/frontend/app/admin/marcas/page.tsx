@@ -14,12 +14,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2 } from "lucide-react";
 import { BrandModal } from "@/components/product/brand-modal";
-import { brands } from "@/lib/data/brands";
+import { useBrands } from "@/hooks/use-brands";
 
 export default function MarcasPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showBrandModal, setShowBrandModal] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState(null);
+
+  const { data: brands = [], isLoading } = useBrands();
 
   const filteredBrands = brands.filter((brand) =>
     brand.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -74,36 +76,52 @@ export default function MarcasPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredBrands.map((brand) => (
-              <TableRow key={brand.id}>
-                <TableCell className="font-medium">{brand.name}</TableCell>
-                <TableCell className="text-muted-foreground">
-                  {brand.description || "Sin descripción"}
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary">
-                    {Math.floor(Math.random() * 20) + 1} productos
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="default">Activa</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(brand)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  Cargando marcas...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : filteredBrands.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  No se encontraron marcas
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredBrands.map((brand) => (
+                <TableRow key={brand.id}>
+                  <TableCell className="font-medium">{brand.name}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {brand.description || "Sin descripción"}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">
+                      {Math.floor(Math.random() * 20) + 1} productos
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={brand.isActive ? "default" : "secondary"}>
+                      {brand.isActive ? "Activa" : "Inactiva"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(brand)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>
